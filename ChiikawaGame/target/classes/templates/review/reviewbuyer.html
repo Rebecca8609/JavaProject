@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>買家評價</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .review-images img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+        .nav-pills .nav-link {
+        width: 100px;
+        height: 50px;
+        border: 1px solid darkgray;
+        color: rgb(131, 131, 131);
+        border-radius: 5px;
+        margin: 0 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        }
+
+        .nav-pills .nav-link.active {
+            background-color: darkgrey;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- header -->
+    <div th:replace="~{layout/userLoginHeader}"></div>
+
+    <div class="container my-4">
+        <!-- 賣場 or 買家下拉選單 -->
+        <div class="mb-4">
+            <div class="dropdown">
+                <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                    買家評價
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                    <li><a class="dropdown-item" th:href="@{/reviews/reviewSeller}">賣家評價</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 評分摘要和篩選按鈕 -->
+        <div class="mb-4 p-3" style="background-color: #f8f9fa; border-radius: 5px;">
+            <div class="d-flex align-items-center">
+                <!-- 評分摘要 -->
+                <div class="me-4">
+                    <h2 class="display-4 mb-1" id="averageRating">0.0/0</h2>
+                    <p class="text-muted mb-1">平均評分</p>
+                    <div class="text-warning fs-4" id="averageStars">
+                        <!-- 星星將動態生成 -->
+                    </div>
+                    <p class="text-muted">(共 <span id="totalReviews">1234</span> 則評價)</p>
+                </div>
+
+                <!-- 篩選按鈕 -->
+                <div>
+                    <ul class="nav nav-pills">
+                        <li class="nav-item"><a class="nav-link active" href="#" data-value="all">全部</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-value="5">5 星</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-value="4">4 星</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-value="3">3 星</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-value="2">2 星</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-value="1">1 星</a></li>
+                    </ul>
+                </div>                
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <h3 class="mb-4">評價列表</h3>
+        <div id="review-list" class="list-group">
+            <!-- 評價列表將動態插入這裡 -->
+        </div>
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- 分頁按鈕將動態插入這裡 -->
+            </ul>
+        </nav>
+    </div>
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script>
+    const apiUrl = '/review/reviewPage?p='; // API 路徑
+    const beReviewedParam = 'beReviewed=';
+    const beReviewed = '19990909'; // 測試 19910101 or 20000101 or 19920202待改
+    let currentPage = 1;
+    let totalPages = 1; // 初始化 totalPages
+    let filterValue = 'all'; // 初始化篩選條件
+
+    // 初始化
+    fetchReviews(currentPage, filterValue);
+
+    // 獲取評論數據（新增篩選條件參數）
+    function fetchReviews(pageNumber = 1, filterValue = "all") {
+        const filterQuery = filterValue === "all" ? "" : `&reviewEvaluation=${filterValue}`;
+        const fullUrl = `${apiUrl}${pageNumber}&${beReviewedParam}${beReviewed}${filterQuery}`;
+        
+        $.ajax({
+            url: fullUrl,
+            method: 'GET',
+            success: function(data) {
+                if (data && data.content) {
+                    totalPages = data.totalPages;
+                    renderReviews(data.content);
+                    renderPagination(data.totalPages, data.number + 1);
+
+                    console.log('抓取評論的路徑:', fullUrl);
+                } else {
+                    console.error("Unexpected response format: Missing 'content' property");
+                }
+            },
+            error: function(error) {
+                console.error("Error fetching reviews:", error);
+                $("#review-list").html(`<div class="alert alert-danger">無法加載評論，請稍後再試。</div>`);
+            }
+        });
+    };
+
+    // 渲染評論列表
+    function renderReviews(reviews) {
+        const reviewList = document.getElementById("review-list");
+        reviewList.innerHTML = ""; // 清空原有內容
+
+        // 如果沒有評論，顯示 "沒有評論"
+        if (reviews.length === 0) {
+            reviewList.innerHTML = `<div class="alert alert-light">沒有評論</div>`;
+            return;
+        }
+        reviews.forEach(review => {
+            // 根據 reviewId 抓取圖片
+            fetchReviewImages(review.reviewId, images => {
+                const stars = generateStars(review.reviewEvaluation || 0); // 評價星星
+                const photos = images && images.length > 0
+                    ? images.map(image => `
+                        <img src="data:image/jpeg;base64,${image.imageBase64}" alt="Review Photo" />
+                    `).join('')
+                    : '<img src="../images/shopee.jpg" alt="預設圖片" />';
+
+                const reviewItem = `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <h6 class="mb-1"><strong>買家: </strong>${review.reviewer}</h6>
+                            <small class="text-muted">${formatDate(review.reviewDate)}</small>
+                        </div>
+                        <div class="text-warning"><strong style="color:black;">評分: </strong>${stars}</div>
+                        <p class="mb-1"><strong>內容: </strong>${review.reviewComment}</p>
+                        <div class="review-images d-flex mt-2">
+                            ${photos}
+                        </div>
+                    </div>
+                `;
+                reviewList.innerHTML += reviewItem;
+            });
+        });
+    }
+
+    // 根據 reviewId 獲取圖片
+    function fetchReviewImages(reviewId, callback) {
+        $.ajax({
+            url: `/review/getImagesByReviewId?p=${reviewId}`,
+            method: 'GET',
+            success: function(data) {
+                callback(data); // 返回圖片數據
+            },
+            error: function(error) {
+                console.error(`Error fetching images for reviewId ${reviewId}:`, error);
+                callback([]); // 如果發生錯誤，返回空陣列
+            }
+        });
+    }
+
+    //算出總評論數量
+    fetch(`/review/reviewPage?beReviewed=${beReviewed}`) //待改
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalReviews').innerText = data.totalElements;
+            console.log('評論總數量:'+data.totalElements);
+    });
+
+    //計算平均評分
+    $.ajax({
+        url: `/review/getAverageRating?beReviewed=${beReviewed}`,
+        method: 'GET',
+        success: function(data) {
+            const averageRating = data.averageRating.toFixed(1); // 保留 1 位小數
+            // const totalReviews = data.totalElements || 0; // 確保有評論數量
+            document.getElementById('averageRating').innerText = averageRating+'/5';
+            // document.getElementById('totalReviews').innerText = totalReviews;
+
+            // 動態生成星星並更新
+            const starsHtml = generateAverageStars(averageRating);
+            document.getElementById('averageStars').innerHTML = starsHtml;
+
+            console.log(`平均評分：${averageRating}`);
+        },
+        error: function(error) {
+            console.error("Error fetching average rating:", error);
+        }
+    });
+    
+
+    // 渲染分頁按鈕
+    function renderPagination(totalPages, currentPage) {
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+
+        // 如果沒有資料，總頁數設為 1，顯示 "第一頁"
+        if (totalPages === 0) {
+            totalPages = 1;
+        }
+
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+
+        // 上一頁按鈕
+        pagination.innerHTML += `
+            <li class="page-item ${currentPage === 1 ? " disabled" : ""}">
+                <a class="page-link" href="#" aria-label="Previous" onclick="goToPage(${currentPage - 1})">
+                    <span aria-hidden="true">上一頁</span>
+                </a>
+            </li>
+        `;
+
+        // 分頁按鈕
+        for (let i = 1; i <= totalPages; i++) {
+            const isActive = i === currentPage ? "active" : "";
+            pagination.innerHTML += `
+                <li class="page-item ${isActive}">
+                    <a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>
+                </li>
+            `;
+        }
+
+        // 下一頁按鈕
+        pagination.innerHTML += `
+            <li class="page-item ${currentPage === totalPages ? " disabled" : ""}">
+                <a class="page-link" href="#" aria-label="Next" onclick="goToPage(${currentPage + 1})">
+                    <span aria-hidden="true">下一頁</span>
+                </a>
+            </li>
+        `;
+        console.log('頁數:'+currentPage);
+
+    }
+
+    // 分頁導航
+    function goToPage(pageNumber) {
+        if (pageNumber < 1 || pageNumber > totalPages) return; // 避免超出範圍
+        currentPage = pageNumber;
+        fetchReviews(pageNumber, filterValue); // 傳遞篩選條件
+        // 滾動到評論列表的底部
+        document.getElementById("review-list").scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+
+    // 點擊篩選按鈕
+    $('.nav-pills .nav-link').on('click', function(e) {
+        e.preventDefault();
+        $('.nav-pills .nav-link').removeClass('active');
+        $(this).addClass('active');
+        filterValue = $(this).data('value');
+        fetchReviews(1, filterValue); // 傳遞篩選條件
+    });
+
+    // 格式化日期
+    function formatDate(dateString) {
+        const options = { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" };
+        return new Date(dateString).toLocaleString("zh-TW", options);
+    }
+
+    // 評論列表的星星，rating 為 1 到 5 的整數
+    function generateStars(rating = 0) {
+        const fullStar = '<i class="bi bi-star-fill"></i>'; // 實心星星
+        const emptyStar = '<i class="bi bi-star"></i>';    // 空心星星
+        let stars = '';
+
+        // 添加實心星星
+        for (let i = 0; i < rating; i++) {
+            stars += fullStar;
+        }
+        // 添加空心星星
+        for (let i = rating; i < 5; i++) {
+            stars += emptyStar;
+        }
+
+        return stars;
+    }
+
+    //平均評分的星星
+    function generateAverageStars(averageRating) {
+        const fullStar = '<i class="bi bi-star-fill"></i>'; // 實心星星
+        const halfStar = '<i class="bi bi-star-half"></i>'; // 半星
+        const emptyStar = '<i class="bi bi-star"></i>';    // 空心星星
+        let stars = '';
+
+        // 添加實心星星
+        for (let i = 0; i < Math.floor(averageRating); i++) {
+            stars += fullStar;
+        }
+
+        // 如果平均分數有小數點，且大於等於 0.5，添加半顆星
+        if (averageRating % 1 >= 0.5) {
+            stars += halfStar;
+        }else if(averageRating % 1 == 0){
+            stars == stars ;
+        }else{
+            stars += emptyStar;
+        }
+        // 補齊剩下的空心星星
+        for (let i = Math.ceil(averageRating);  i < 5; i++) {
+            stars += emptyStar;
+        }
+        
+        console.log('Math.floor():'+(Math.floor(averageRating)));
+        console.log('averageRating % 1:'+(averageRating%1));
+        console.log('Math.ceil():'+(Math.ceil(averageRating)));
+        return stars;
+    }
+
+
+
+
+</script>
+
+    
+</body>
+</html>

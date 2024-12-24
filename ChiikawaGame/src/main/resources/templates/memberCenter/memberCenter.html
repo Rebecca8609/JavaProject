@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>我的會員中心</title>
+    <!-- Import Bootstrap CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/custom.css}" rel="stylesheet">
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/jquery.min.js}"></script>
+</head>
+<body>
+    <!-- 引入 userHeader -->
+    <div th:replace="~{layout/userHeader}"></div>
+
+    <!-- 使用 Flexbox 進行佈局 -->
+    <div class="d-flex" style="height: 100vh;">
+        <!-- 引入側邊欄 -->
+        <div th:replace="~{layout/memberCenterSidebar}"></div>
+
+        <!-- 右側主要內容區 -->
+        <div class="flex-grow-1 p-4">
+            <h2>歡迎來到會員中心</h2>
+            <p>這裡是會員中心的主要內容。</p>
+
+        </div>
+    </div>
+
+</body>
+</html>

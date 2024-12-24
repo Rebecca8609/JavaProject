@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+    <meta charset="UTF-8">
+    <title>品牌列表</title>
+</head>
+<body>
+
+<div th:replace="~{layout/saHeader}"></div>
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-10">
+            <h1>品牌列表</h1>
+
+            <!-- 搜尋欄 -->
+            <div class="mb-3">
+                <input type="text" id="brand-search" class="form-control" placeholder="搜尋品牌名稱...">
+            </div>
+
+            <!-- 新增品牌按鈕 -->
+            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addBrandModal">
+                新增品牌
+            </button>
+
+            <!-- 新增品牌的模態框 -->
+            <div class="modal fade" id="addBrandModal" tabindex="-1" aria-labelledby="addBrandModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addBrandModalLabel">新增品牌</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="brand-form">
+                                <div>
+                                    <label for="brand-name">品牌名稱</label>
+                                    <input type="text" id="brand-name" name="name" required class="form-control"/>
+                                </div>
+                                <div>
+                                    <label for="brand-photo">品牌照片</label>
+                                    <input type="file" id="brand-photo" name="file" class="form-control"/>
+                                    <img id="brand-photo-preview" src="" alt="圖片預覽" style="width: 100px; height: 100px; display: none;"/>
+                                </div>
+                                <div>
+                                    <label for="brand-info">品牌敘述(非必要)</label><br>
+                                    <textarea id="brand-info" name="info" class="form-control"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-2">送出</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 編輯品牌的模態框 -->
+            <div class="modal fade" id="editBrandModal" tabindex="-1" aria-labelledby="editBrandModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editBrandModalLabel">編輯品牌</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="edit-brand-form">
+                                <input type="hidden" id="edit-brand-id" name="brandId">
+                                <div>
+                                    <label for="edit-brand-name">品牌名稱</label>
+                                    <input type="text" id="edit-brand-name" name="name" required class="form-control"/>
+                                </div>
+                                <div>
+                                    <label for="edit-brand-photo">品牌照片</label>
+                                    <input type="file" id="edit-brand-photo" name="file" class="form-control"/>
+                                    <img id="edit-brand-photo-preview" src="" alt="圖片預覽" style="width: 180px; height: 120px; display: none;"/>
+                                </div>
+                                <div>
+                                    <label for="edit-brand-info">品牌敘述(非必要)</label><br>
+                                    <textarea id="edit-brand-info" name="info" class="form-control"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-warning mt-2">更新</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="upload_result"></div>
+
+            <table class="table" id="brand-table">
+                <thead>
+                <tr>
+                    <th>品牌ID</th>
+                    <th>品牌名稱</th>
+                    <th>品牌照片</th>
+                    <th>品牌說明</th>
+                    <th>動作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <th:block th:each="b : ${brandList}">
+                    <tr>
+                        <td><p th:text="${b.brandId}"></p></td>
+                        <td><p th:text="${b.brandName}"></p></td>
+                        <td>
+                            <img th:src="'data:image/jpeg;base64,' + ${b.brandPhoto}" alt="品牌照片" width="180px" height="120px"/>
+                        </td>
+                        <td><p th:text="${b.brandInfo}"></p></td>
+                        <td>
+                            <!-- 編輯按鈕 -->
+                            <button type="button" class="btn btn-warning btn-sm" onclick="openEditBrandModal(${b.brandId})">編輯</button>
+                            <!-- 刪除按鈕 -->
+                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteBrand(${b.brandId})">刪除</button>
+                        </td>
+                    </tr>
+                </th:block>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// 搜尋品牌功能
+const searchInput = document.getElementById("brand-search");
+searchInput.addEventListener("input", function () {
+    const searchQuery = searchInput.value.toLowerCase();
+    const rows = document.querySelectorAll("#brand-table tbody tr");
+
+    rows.forEach(row => {
+        const brandName = row.cells[1].textContent.toLowerCase();
+        if (brandName.includes(searchQuery)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+});
+
+// 新增品牌表單提交
+const submitBrandForm = document.getElementById("brand-form");
+submitBrandForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    let formData = new FormData(submitBrandForm);
+
+    // 發送新增請求
+    axios.post("http://localhost:8080/api/brand/addPost", formData)
+        .then((response) => {
+            document.getElementById("upload_result").innerText = "新增成功!";
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addBrandModal'));
+            modal.hide(); // 關閉模態框
+
+            // 清除模態框背景與恢復滾動
+            document.querySelector('.modal-backdrop')?.remove();
+            document.body.style.overflow = '';
+
+            loadBrandList(); // 重新載入品牌列表
+        })
+        .catch((error) => {
+            document.getElementById("upload_result").innerText = "新增失敗";
+            console.error(error);
+        });
+});
+
+// 編輯品牌表單提交
+const editBrandForm = document.getElementById("edit-brand-form");
+editBrandForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    let formData = new FormData(editBrandForm);
+    const brandId = document.getElementById("edit-brand-id").value;
+
+    // 發送更新請求
+    axios.put(`http://localhost:8080/api/brand/update/${brandId}`, formData)
+        .then((response) => {
+            document.getElementById("upload_result").innerText = "更新成功!";
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editBrandModal'));
+            modal.hide(); // 關閉模態框
+
+            // 清除模態框背景與恢復滾動
+            document.querySelector('.modal-backdrop')?.remove();
+            document.body.style.overflow = '';
+
+            loadBrandList(); // 重新載入品牌列表
+        })
+        .catch((error) => {
+            document.getElementById("upload_result").innerText = "更新失敗";
+            console.error(error);
+        });
+});
+
+// 打開編輯品牌的模態框
+function openEditBrandModal(brandId) {
+    axios.get(`http://localhost:8080/api/brand/${brandId}`)
+        .then(response => {
+            const brand = response.data;
+
+            // 填充表單內容
+            document.getElementById("edit-brand-id").value = brand.brandId;
+            document.getElementById("edit-brand-name").value = brand.brandName;
+            document.getElementById("edit-brand-info").value = brand.brandInfo;
+
+            // 更新圖片預覽
+            if (brand.brandPhoto) {
+                const preview = document.getElementById("edit-brand-photo-preview");
+                preview.style.display = "block";
+                preview.src = `data:image/jpeg;base64,${brand.brandPhoto}`;
+            } else {
+                document.getElementById("edit-brand-photo-preview").style.display = "none";
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('editBrandModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error(error);
+        });
+}
+
+// 刪除品牌
+function deleteBrand(brandId) {
+    if (confirm("確定刪除此品牌?")) {
+        axios.delete(`http://localhost:8080/api/brand/${brandId}`)
+            .then(response => {
+                document.getElementById("upload_result").innerText = "刪除成功!";
+                loadBrandList(); // 重新載入品牌列表
+            })
+            .catch(error => {
+                document.getElementById("upload_result").innerText = "刪除失敗";
+                console.error(error);
+            });
+    }
+}
+
+// 重新載入品牌列表
+function loadBrandList() {
+    axios.get("http://localhost:8080/api/brand/list")
+        .then((response) => {
+            const tbody = document.querySelector("tbody");
+
+            // 根據 API 資料生成表格
+            tbody.innerHTML = response.data.map((b) => `
+                <tr>
+                    <td>${b.brandId}</td>
+                    <td>${b.brandName}</td>
+                    <td>
+                        <img alt="品牌照片" width="180px" height="120px" src="/api/brand/photo?id=${b.brandId}">
+                    </td>
+                    <td>${b.brandInfo}</td>
+                    <td>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="openEditBrandModal(${b.brandId})">編輯</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteBrand(${b.brandId})">刪除</button>
+                    </td>
+                </tr>
+            `).join('');
+        })
+        .catch((error) => {
+            console.error("無法載入品牌列表:", error);
+        });
+}
+
+// 頁面載入時初始化品牌列表
+loadBrandList();
+</script>
+
+</body>
+</html>

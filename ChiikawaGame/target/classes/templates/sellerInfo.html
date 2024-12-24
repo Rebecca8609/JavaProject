@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>賣場頁面</title>
+<!-- 引入 Bootstrap CSS -->
+<link rel="stylesheet"
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<style>
+header {
+	z-index: 1100;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+}
+
+.sidebar-container {
+	width: 300px;
+	position: fixed;
+	top: 56px;
+	left: 0;
+	bottom: 0;
+	padding: 20px;
+	background-color: #f8f9fa;
+	border-right: 1px solid #ddd;
+	overflow-y: auto;
+	z-index: 1000;
+}
+
+.main-content {
+	padding-top: 80px;
+	margin-left: 325px;
+}
+
+.latest-product-grid {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 15px;
+	padding: 10px;
+}
+
+.product-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	background-color: #fff;
+	border-radius: 8px;
+	padding: 10px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+	text-decoration: none;
+	color: #333;
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-item:hover {
+	transform: scale(1.05);
+	box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.product-item img {
+	width: 180px;
+	height: 180px;
+	object-fit: cover;
+	border-radius: 8px;
+}
+
+.product-info {
+	text-align: center;
+	margin-top: 10px;
+}
+
+.product-name {
+	font-size: 1.1em;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 150px;
+}
+
+.product-price {
+	font-size: 1.2em;
+	font-weight: bold;
+	color: #e74c3c;
+	margin-top: 5px;
+}
+
+.section-container {
+	background-color: #f8f9fa;
+	border-radius: 10px;
+	padding: 20px;
+}
+
+#sellerInfoSection .card {
+	margin-right: auto; /* 自動向左對齊 */
+	margin-left: auto; /* 自動向左對齊 */
+	width: 90%; /* 設置卡片寬度，防止貼齊 */
+	max-width: 800px; /* 可選，限制卡片的最大寬度 */
+}
+
+.section-container {
+	background-color: #f8f9fa;
+	border-radius: 10px;
+	padding: 20px;
+	 margin-right: 25px; /* 增加右邊距 */
+}
+</style>
+</head>
+<body>
+	<!-- Header 區域 -->
+	<div th:replace="~{layout/userHeader}" class="fixed-top"></div>
+
+	<!-- 篩選條件 Sidebar -->
+	<div class="sidebar-container">
+	<br>
+		<h4 class="text-center">篩選條件</h4>
+		<form id="filterForm">
+			<div class="mb-3">
+				<label for="keyword" class="form-label">關鍵字</label> <input
+					type="text" id="keyword" class="form-control" placeholder="輸入關鍵字">
+			</div>
+			<div class="mb-3">
+				<label for="priceRange" class="form-label">價格範圍</label>
+				<div class="d-flex">
+					<input type="number" id="minPrice" class="form-control me-2"
+						placeholder="最低價"> <span>至</span> <input type="number"
+						id="maxPrice" class="form-control ms-2" placeholder="最高價">
+				</div>
+			</div>
+			<div class="mb-3">
+				<label for="categorySelect" class="form-label">商品分類</label> <select
+					id="categorySelect" class="form-select">
+					<option value="">全部分類</option>
+				</select>
+			</div>
+			<div class="mb-3">
+				<label class="form-label">品牌</label>
+				<div id="brandCheckboxContainer"></div>
+			</div>
+			<div class="text-end mt-3">
+				<button type="button" id="clearFilterButton"
+					class="btn btn-secondary ms-2">清除條件</button>
+				<button type="button" id="filterButton" class="btn btn-primary">應用篩選</button>
+			</div>
+		</form>
+	</div>
+
+	<!-- 主內容區域 -->
+	<div class="main-content">
+		<!-- 賣家資訊區塊 -->
+
+		<section id="sellerInfoSection" class="mb-4">
+			<div class="card">
+				<div class="card-body pe-3">
+					<h4 class="card-title text-center bg-warning text-dark p-2 rounded">賣家資訊</h4>
+					<div class="seller-info-item mb-2">
+						<strong>賣家名稱：</strong>
+						<!-- 透過 th:text 把後端傳進來的 sellerName 顯示 -->
+						<span th:text="${sellerName}">賣家名稱展示</span>
+					</div>
+					<div class="seller-info-item mb-2">
+						<strong>賣場評分：</strong>
+						<!-- 這裡示範把 double 轉成一位小數後顯示 -->
+						<span th:text="${#numbers.formatDecimal(sellerRating, 1, 1)}">0.0</span>
+						<span>/ 5</span>
+					</div>
+					<div class="seller-info-item mb-2">
+						<strong>賣場評價：</strong> <span th:text="${reviewCount}">0</span> 筆
+					</div>
+					<div class="seller-info-item mb-2">
+						<strong>商品：</strong>
+						<!-- 這裡直接綁定 itemCount -->
+						<span th:text="${itemCount}">0</span> 件
+					</div>
+					<div class="seller-info-item mb-2">
+						<strong>賣場訂單：</strong>
+						<!-- 綁定 transactionCount -->
+						<span>0</span> 件
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="section-container my-4">
+			<h3 class="text-center">搜尋結果</h3>
+
+			<div class="latest-product-grid" id="productGrid"></div>
+			<div id="pagination" class="d-flex justify-content-center mt-3"></div>
+		</section>
+	</div>
+
+	<script>
+         const userId = [[${userId}]]; // 從 Thymeleaf 模板獲取 userId
+    let currentPage = 0;
+    const pageSize = 20; // 設定每頁顯示 20 個商品
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadBrands();
+        loadCategories();
+        loadItems();
+
+        document.getElementById("filterButton").addEventListener("click", () => {
+            currentPage = 0;
+            loadItems();
+        });
+
+        document.getElementById("clearFilterButton").addEventListener("click", () => {
+            document.getElementById("filterForm").reset();
+            currentPage = 0;
+            loadItems();
+        });
+    });
+
+    async function loadBrands() {
+        try {
+            const response = await fetch("/brands");
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const brands = await response.json();
+            const brandContainer = document.querySelector("#brandCheckboxContainer");
+            brandContainer.innerHTML = brands.map(brand => `
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" value="${brand.brandName}" id="brand${brand.brandName}">
+                    <label for="brand${brand.brandName}" class="form-check-label">${brand.brandName}</label>
+                </div>`).join("");
+        } catch (error) {
+            console.error('Error loading brands:', error);
+        }
+    }
+
+    async function loadCategories() {
+        try {
+            const response = await fetch("/categories");
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const categories = await response.json();
+            const categorySelect = document.querySelector("#categorySelect");
+            categorySelect.innerHTML += categories.map(category => `<option value="${category.categoryId}">${category.categoryName}</option>`).join("");
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    }
+
+    async function loadItems() {
+        try {
+            const queryParams = buildQueryParams();
+            const response = await fetch(`/api/seller/${userId}/products?${queryParams}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            console.log('API Response:', data); // 調試用
+
+            renderItems(data.content);
+            renderPagination(data.totalPages);
+        } catch (error) {
+            console.error('Error loading items:', error);
+        }
+    }
+
+    function buildQueryParams() {
+        const params = new URLSearchParams();
+        params.append("page", currentPage);
+        params.append("size", pageSize);
+
+        const keyword = document.getElementById("keyword").value.trim();
+        if (keyword) params.append("keyword", keyword);
+
+        const minPrice = document.getElementById("minPrice").value.trim();
+        if (minPrice) params.append("minPrice", minPrice);
+
+        const maxPrice = document.getElementById("maxPrice").value.trim();
+        if (maxPrice) params.append("maxPrice", maxPrice);
+
+        const categoryId = document.getElementById("categorySelect").value;
+        if (categoryId) params.append("categoryId", categoryId);
+
+        const brandIds = Array.from(document.querySelectorAll("#brandCheckboxContainer input:checked"))
+            .map(checkbox => checkbox.value)
+            .join(",");
+        if (brandIds) params.append("brandIds", brandIds);
+
+        return params.toString();
+    }
+
+    function renderItems(items) {
+        const productGrid = document.getElementById("productGrid");
+
+        // 若 items 為空陣列，顯示提示訊息
+        if (!items || items.length === 0) {
+            productGrid.innerHTML = `
+                <p class="text-center text-muted">未找到符合條件的商品</p>
+            `;
+            // 同時也可以把分頁功能的區塊清空 (若有分頁)
+            document.getElementById("pagination").innerHTML = "";
+            return;
+        }
+
+        // 若有資料，才進行商品資料的渲染
+        productGrid.innerHTML = items.map(item => `
+            <a href="/itemDisplay/${item.itemId}" class="product-item">
+                <img src="${item.itemPhoto || '/images/default.jpg'}" alt="${item.itemName}" loading="lazy">
+                <div class="product-info">
+                    <h5 class="product-name">${item.itemName}</h5>
+                    <p class="product-price">NT$ ${Number(item.itemPrice).toLocaleString('zh-TW')}</p>
+                </div>
+            </a>
+        `).join("");
+    }
+
+    function renderPagination(totalPages) {
+        const paginationContainer = document.getElementById("pagination");
+        paginationContainer.innerHTML = "";
+
+        if (totalPages <= 1) return; // 如果只有一頁，則不顯示分頁
+
+        // 創建「上一頁」按鈕
+        const prevLi = document.createElement("li");
+        prevLi.classList.add("page-item");
+        if (currentPage === 0) {
+            prevLi.classList.add("disabled");
+        }
+        const prevLink = document.createElement("a");
+        prevLink.classList.add("page-link");
+        prevLink.textContent = "上一頁";
+        prevLink.href = "#";
+        if (currentPage > 0) {
+            prevLink.addEventListener("click", (e) => {
+                e.preventDefault();
+                currentPage--;
+                loadItems();
+                window.scrollTo({ top: 0, behavior: 'smooth' }); // 滾動到頂部
+            });
+        }
+        prevLi.appendChild(prevLink);
+        paginationContainer.appendChild(prevLi);
+
+        // 生成分頁按鈕
+        for (let i = 0; i < totalPages; i++) {
+            const pageNumber = i + 1; // 將頁碼轉為 1-based
+            const pageLi = document.createElement("li");
+            pageLi.classList.add("page-item");
+
+            const pageLink = document.createElement("a");
+            pageLink.classList.add("page-link");
+            pageLink.textContent = pageNumber;
+            pageLink.setAttribute("aria-label", `第 ${pageNumber} 頁`);
+
+            if (i === currentPage) {
+                pageLi.classList.add("active", "disabled");
+            } else {
+                pageLink.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    currentPage = i;
+                    loadItems();
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); // 滾動到頂部
+                });
+            }
+
+            pageLi.appendChild(pageLink);
+            paginationContainer.appendChild(pageLi);
+        }
+
+        // 創建「下一頁」按鈕
+        const nextLi = document.createElement("li");
+        nextLi.classList.add("page-item");
+        if (currentPage === totalPages - 1) {
+            nextLi.classList.add("disabled");
+        }
+        const nextLink = document.createElement("a");
+        nextLink.classList.add("page-link");
+        nextLink.textContent = "下一頁";
+        nextLink.href = "#";
+        if (currentPage < totalPages - 1) {
+            nextLink.addEventListener("click", (e) => {
+                e.preventDefault();
+                currentPage++;
+                loadItems();
+                window.scrollTo({ top: 0, behavior: 'smooth' }); // 滾動到頂部
+            });
+        }
+        nextLi.appendChild(nextLink);
+        paginationContainer.appendChild(nextLi);
+    }
+    </script>
+</body>
+</html>

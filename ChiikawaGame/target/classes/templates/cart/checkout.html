@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>結帳</title>
+<!-- 引入 Bootstrap CSS -->
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+	rel="stylesheet">
+<script
+	src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+.main-content {
+	padding-top: 80px; /* 根據 Header 的高度進行調整 */
+	background-color: #ffffff; /* 主內容背景色 */
+}
+
+.form-container {
+	background-color: #f8f9fa;
+	border-radius: 10px;
+	padding: 20px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+	margin-bottom: 20px;
+}
+
+.list-group-item {
+	border: none;
+}
+
+.checkout-btn {
+	margin-top: 20px;
+}
+
+.cart-summary-empty {
+	color: gray;
+	font-style: italic;
+}
+</style>
+</head>
+<body>
+	<!-- 引入 Header -->
+	<div th:replace="~{layout/userHeader}"></div>
+
+	<!-- 主要內容 -->
+	<main class="main-content">
+		<div class="container my-5">
+			<div class="form-container">
+				<h2 class="text-center mb-4">結帳</h2>
+				<form id="checkout-form">
+					<div class="mb-3">
+						<label for="recipient" class="form-label">收件人姓名</label> <input
+							type="text" id="recipient" name="recipient" class="form-control"
+							required>
+					</div>
+					<div class="mb-3">
+						<label for="address" class="form-label">地址</label> <input
+							type="text" id="address" name="address" class="form-control"
+							required>
+					</div>
+					<div class="mb-3">
+						<label for="shipping-method" class="form-label">物流方式</label> <select
+							id="shipping-method" name="shippingMethod" class="form-select"
+							required>
+							<!-- 動態加載物流方式 -->
+						</select>
+					</div>
+					<h4 class="mb-3">購物車內容:</h4>
+					<ul id="cart-summary" class="list-group mb-3">
+						<!-- 動態生成購物車摘要 -->
+						<li class="cart-summary-empty">正在加載購物車內容...</li>
+					</ul>
+					<div class="text-end">
+						<button type="submit" class="btn btn-success checkout-btn">提交訂單</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</main>
+
+	<!-- 頁腳 -->
+	<footer>
+		<p class="text-center">© 2024 我的商店</p>
+	</footer>
+
+	<script>
+        // 動態加載物流方式
+        async function loadShippingMethods() {
+            const shippingMethodSelect = document.getElementById("shipping-method");
+            shippingMethodSelect.innerHTML = '<option disabled>正在加載物流方式...</option>';
+
+            try {
+                const response = await fetch('/shipping-method');
+                if (!response.ok) throw new Error("無法取得物流方式資料");
+                const shippingMethods = await response.json();
+
+                if (shippingMethods.length === 0) {
+                    shippingMethodSelect.innerHTML = '<option disabled>目前無可用物流方式</option>';
+                    return;
+                }
+
+                shippingMethodSelect.innerHTML = ''; // 清空加載提示
+                shippingMethods.forEach(method => {
+                    const option = document.createElement("option");
+                    option.value = method.shippingMethodId;
+                    option.textContent = `${method.methodName} (${method.description || '無描述'})`;
+                    shippingMethodSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error("無法加載物流方式：", error);
+                shippingMethodSelect.innerHTML = '<option disabled>無法加載物流方式，請稍後再試</option>';
+            }
+        }
+
+        // 加載購物車摘要
+        async function loadCartSummary() {
+            const cartSummaryContainer = document.getElementById("cart-summary");
+            cartSummaryContainer.innerHTML = '<li class="cart-summary-empty">正在加載購物車內容...</li>';
+
+            try {
+                const response = await fetch('/api/cart');
+                if (!response.ok) throw new Error("無法取得購物車資料");
+                const cart = await response.json();
+
+                if (!cart.cartItems || cart.cartItems.length === 0) {
+                    cartSummaryContainer.innerHTML = '<li class="cart-summary-empty">您的購物車是空的。</li>';
+                    return;
+                }
+
+                cartSummaryContainer.innerHTML = ''; // 清空加載提示
+                cart.cartItems.forEach(item => {
+                    const listItem = document.createElement("li");
+                    listItem.className = "list-group-item";
+                    listItem.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-8">${item.itemName} x ${item.itemQuantity}</div>
+                            <div class="col-md-4 text-end">$${item.itemPrice.toFixed(2)}</div>
+                        </div>
+                    `;
+                    cartSummaryContainer.appendChild(listItem);
+                });
+
+                const totalItem = document.createElement("li");
+                totalItem.className = "list-group-item text-end fw-bold";
+                totalItem.textContent = `總計: $${cart.cartTotal.toFixed(2)}`;
+                cartSummaryContainer.appendChild(totalItem);
+            } catch (error) {
+                console.error("無法加載購物車摘要：", error);
+                cartSummaryContainer.innerHTML = '<li class="cart-summary-empty text-danger">無法加載購物車內容，請稍後再試。</li>';
+            }
+        }
+
+        // 提交訂單
+       async function submitOrder(event) {
+    event.preventDefault(); // 阻止表單默認提交行為
+
+    const recipientName = document.getElementById("recipient").value.trim();
+    const address = document.getElementById("address").value.trim();
+    const shippingMethod = document.getElementById("shipping-method").value;
+
+    if (!recipientName || !address || !shippingMethod) {
+        alert("請填寫完整的物流資訊！");
+        return;
+    }
+
+    const submitButton = event.target.querySelector(".checkout-btn");
+    submitButton.disabled = true;
+    submitButton.textContent = "提交中...";
+
+    try {
+        const response = await fetch('/api/cart/checkout', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ 
+                shippingInfoRecipient: recipientName, 
+                shippingInfoAddress: address, 
+                shippingMethodId: shippingMethod 
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert("提交訂單失敗：" + (error.message || "請稍後再試"));
+            return;
+        }
+
+        const result = await response.json();
+        alert("訂單提交成功！訂單編號：" + result.orderId);
+        localStorage.removeItem("cartItems");
+        localStorage.removeItem("cartTotal");
+        window.location.href = result.redirectUrl;
+    } catch (error) {
+        console.error("提交訂單失敗：", error);
+        alert("提交訂單失敗，請稍後再試！");
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "提交訂單";
+    }
+}
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+            loadShippingMethods(); // 加載物流方式
+            loadCartSummary(); // 加載購物車摘要
+            const checkoutForm = document.getElementById("checkout-form");
+            checkoutForm.addEventListener("submit", submitOrder); // 綁定提交事件
+        });
+    </script>
+</body>
+</html>

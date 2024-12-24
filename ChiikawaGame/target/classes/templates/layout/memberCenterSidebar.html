@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的會員中心</title>
+    <link rel="stylesheet" href="./static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./static/css/custom.css">
+    <link rel="stylesheet" href="./static/css/bootstrap-icons.css">
+
+</head>
+<body>
+    <!-- 側邊欄 -->
+    <div class="d-flex">
+        <div class="flex-shrink-0 p-3" style="width: 280px; background-color: #f8f9fa; height: 100vh;">
+            <a th:href="@{/memberCenter/profile}" class="d-flex flex-column align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+                <span class="fs-4 text-center">我的會員中心</span>
+            </a>
+            <hr>
+            <ul class="nav nav-pills flex-column mb-auto" id="sidebarMenu">
+                <!-- 我的帳戶 (縮排) -->
+                <li class="nav-item" style="padding-left: 20px;">
+                    <a th:href="@{/memberCenter/profile}"
+                       onclick="sessionStorage.setItem('accountMenuExpanded', 'true')"
+                       class="nav-link text-dark d-flex align-items-center justify-content-start"
+                       role="button" aria-expanded="false" aria-controls="accountMenu" id="accountMenuLink">
+                        <span>我的帳戶</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse" id="accountMenu">
+                        <ul class="list-unstyled" style="padding-left: 30px; margin-left: 5px;">
+                            <li><a href="#" class="nav-link text-dark" id="profileLink">個人檔案</a></li>
+                            <li><a href="#" class="nav-link text-dark" id="passwordupdate">變更密碼</a></li>
+                            <li><a href="#" class="nav-link text-dark" id="paymentLink">交易方法</a></li>
+                            <li><a href="#" class="nav-link text-dark" id="addressLink">物流地址</a></li>
+                        </ul>
+                    </div>
+                </li>
+                
+                <li style="padding-left: 20px;">
+                    <a th:href="@{/memberCenter/item/itemList}" class="nav-link text-dark">我的商品</a>
+                </li>
+                
+                <li style="padding-left: 20px;">
+                    <a th:href="@{/memberCenter/purchase}" class="nav-link text-dark">購買清單</a>
+                </li>
+                <li style="padding-left: 20px;">
+                    <a th:href="@{/memberCenter/order}" class="nav-link text-dark">銷售訂單</a>
+                </li>
+                <li style="padding-left: 20px;">
+                    <a th:href="@{/forum/forumArticlesMember}" class="nav-link text-dark">收購文章</a>
+                </li>
+            </ul>
+            <hr>
+            
+        </div>
+    </div>
+
+    <script src="./static/js/jquery.min.js"></script>
+    <script src="./static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const accountMenuElement = document.getElementById('accountMenu');
+            const accountMenu = bootstrap.Collapse.getOrCreateInstance(accountMenuElement, {
+                toggle: false
+            });
+
+            // 檢查當前 URL，如果不是 /memberCenter/profile，則收起下拉列表
+            const currentPath = window.location.pathname;
+            if (currentPath !== '/memberCenter/profile') {
+                accountMenu.hide();
+                sessionStorage.setItem('accountMenuExpanded', 'false');
+            } else {
+                if (sessionStorage.getItem('accountMenuExpanded') === 'true') {
+                    accountMenu.show();
+                }
+            }
+
+            // 點擊展開或收起時更新 sessionStorage
+            document.getElementById('accountMenuLink').addEventListener('click', function () {
+                const isExpanded = accountMenuElement.classList.contains('show');
+                sessionStorage.setItem('accountMenuExpanded', isExpanded ? 'false' : 'true');
+            });
+        });
+    </script>
+</body>
+</html>

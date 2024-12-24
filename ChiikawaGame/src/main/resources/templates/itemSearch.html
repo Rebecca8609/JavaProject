@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>搜尋結果</title>
+
+<!-- 引入 Bootstrap CSS -->
+<link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+<link th:href="@{/css/custom.css}" rel="stylesheet">
+<link rel="stylesheet" href="./static/css/bootstrap-icons.css">
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/jquery.min.js}"></script>
+
+<style>
+/* 頁首樣式 */
+header {
+	z-index: 1100; /* 提高 z-index */
+	position: fixed; /* 保持 header 固定在最上層 */
+	top: 0;
+	left: 0;
+	width: 100%;
+}
+
+.container-fluid {
+	width: 100%;
+}
+
+/* 側邊篩選條件樣式 */
+.sidebar-container {
+	width: 300px;
+	position: fixed;
+	top: 56px;
+	left: 0;
+	bottom: 0;
+	padding: 20px;
+	background-color: #f8f9fa;
+	border-right: 1px solid #ddd;
+	overflow-y: auto;
+	z-index: 1000;
+}
+
+.main-content {
+	padding-top: 80px; /* 根據 Header 高度調整間距 */
+	margin-left: 325px; /* 調整 margin 以適應 Sidebar */
+}
+
+.section-container {
+	background-color: #f8f9fa;
+	border-radius: 10px;
+	padding: 20px;
+}
+
+/* 商品卡片樣式與首頁相同 */
+.latest-product-grid {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 15px;
+	padding: 10px;
+	justify-content: center;
+}
+
+.product-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	background-color: #fff;
+	border-radius: 8px;
+	padding: 10px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+	transition: transform 0.2s, box-shadow 0.2s;
+	text-decoration: none;
+	color: #333;
+	height: 280px; /* 統一卡片高度 */
+}
+
+.product-item img {
+	width: 180px;
+	height: 180px;
+	object-fit: cover;
+	border-radius: 8px;
+	display: block;
+	margin: 0 auto;
+}
+
+.product-item:hover {
+	transform: scale(1.05);
+	box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.product-info {
+	text-align: center;
+	margin-top: 10px;
+	max-width: 150px;
+}
+
+.product-name {
+	font-size: 1.1em;
+	color: #333;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: auto;
+	max-width: 150px;
+}
+
+.product-price {
+	font-size: 1.2em;
+	font-weight: bold;
+	color: #e74c3c;
+	margin-top: 5px;
+}
+</style>
+</head>
+<body>
+	<!-- 引入 Header -->
+	<div th:replace="~{layout/userHeader}" class="fixed-top"></div>
+
+	<!-- 左側篩選條件區域 (Sidebar) -->
+	<div class="sidebar-container">
+		<br>
+		<h4 class="text-center">篩選條件</h4>
+		<hr>
+		<form>
+			<div class="mb-3">
+				<label for="priceRange" class="form-label">價格範圍</label>
+				<div class="d-flex align-items-center">
+					<input type="number" class="form-control me-2" id="minPrice"
+						placeholder="最低價"> <span>至</span> <input type="number"
+						class="form-control ms-2" id="maxPrice" placeholder="最高價">
+				</div>
+			</div>
+			<hr>
+			<div class="mb-3">
+				<label for="startDate" class="form-label">開始日期</label> <input
+					type="date" class="form-control" id="startDate">
+			</div>
+			<div class="mb-3">
+				<label for="endDate" class="form-label">結束日期</label> <input
+					type="date" class="form-control" id="endDate">
+			</div>
+			<hr>
+			<div class="mb-3">
+				<label for="categorySelect" class="form-label">商品分類</label> <select
+					id="categorySelect" class="form-select">
+					<option selected>選擇分類</option>
+				</select>
+			</div>
+			<hr>
+			<div class="mb-3">
+				<label class="form-label">品牌</label>
+				<div id="brandCheckboxContainer"></div>
+			</div>
+			<hr>
+			<div class="text-end mt-3">
+				<button type="button" id="clearFilterButton"
+					class="btn btn-secondary ms-2">清除條件</button>
+				<button type="button" id="filterButton" class="btn btn-primary">應用篩選</button>
+			</div>
+		</form>
+	</div>
+
+	<!-- 主內容區 -->
+	<div class="main-content">
+		<div class="container my-4">
+			<section class="section-container my-4">
+				<h3 class="text-center">搜尋結果</h3>
+				<!-- 搜尋結果區域 -->
+				<div class="latest-product-grid">
+					<!-- 商品卡片 -->
+					<a th:each="item : ${items}"
+						th:href="@{'/itemDisplay/' + ${item.itemId}}" class="product-item">
+						<div>
+							<img th:src="@{'/itemPhoto/' + ${item.itemPhoto[0]?.id}}"
+								alt="商品圖片" onerror="this.src='/images/default.jpg';">
+						</div>
+						<div class="product-info">
+							<h5 class="product-name" th:text="${item.itemName}">商品名稱</h5>
+							<p class="product-price"
+								th:text="'NT$ ' + ${#numbers.formatInteger(item.itemPrice, 0, 'DEFAULT')}">NT$
+								0</p>
+
+						</div>
+					</a>
+					<!-- 若沒有商品結果 -->
+					<p th:if="${items.isEmpty()}" class="text-center text-muted">未找到符合條件的商品</p>
+				</div>
+			</section>
+		</div>
+		<div id="pagination" class="d-flex justify-content-center mt-3"></div>
+	</div>
+
+	<script>
+    
+    
+let currentPage = 0; // 當前頁碼
+const pageSize = 15; // 每頁顯示商品數量
+const productGrid = document.querySelector(".latest-product-grid"); // 全域變數
+
+document.addEventListener("DOMContentLoaded", () => {
+    const filterButton = document.querySelector("#filterButton");
+    const clearFilterButton = document.querySelector("#clearFilterButton"); // 清除按鈕
+
+    loadBrands();
+    loadCategories();
+    loadItems(); // 初始加載商品
+
+    filterButton.addEventListener("click", () => {
+        currentPage = 0;
+        loadItems();
+    });
+
+    // 清除篩選條件
+    clearFilterButton.addEventListener("click", () => {
+        document.getElementById("minPrice").value = "";
+        document.getElementById("maxPrice").value = "";
+        document.getElementById("startDate").value = "";
+        document.getElementById("endDate").value = "";
+        document.getElementById("categorySelect").selectedIndex = 0;
+
+        // 清空所有品牌勾選
+        document.querySelectorAll("#brandCheckboxContainer input:checked").forEach(checkbox => {
+            checkbox.checked = false;
+        });
+
+        currentPage = 0;
+        loadItems(); // 重新加載未篩選的商品列表
+    });
+});
+
+    
+    // 載入品牌資料並生成品牌卡
+function loadBrandCards() {
+    fetch("/brands")
+        .then(response => response.json())
+        .then(data => {
+            const brandGrid = document.getElementById("brand-grid");
+            brandGrid.innerHTML = ""; // 清空現有內容
+
+            data.forEach(brand => {
+                const brandCard = `
+                    <a href="/itemSearch?keyword=${encodeURIComponent(brand.brandName)}" class="category-item">
+                        <div class="gray-placeholder">
+                            <img src="${brand.brandPhoto || '/images/default.jpg'}" class="img-fluid rounded" alt="${brand.brandName}">
+                        </div>
+                        <div class="category-name">${brand.brandName}</div>
+                    </a>
+                `;
+                brandGrid.insertAdjacentHTML("beforeend", brandCard);
+            });
+        })
+        .catch(error => {
+            console.error("無法載入品牌資料：", error);
+        });
+}
+
+    // 加載品牌資料
+    async function loadBrands() {
+        try {
+            const response = await fetch("/brands");
+            const brands = await response.json();
+            const brandContainer = document.querySelector("#brandCheckboxContainer");
+            brands.forEach(brand => {
+                const checkbox = `
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" value="${brand.brandName}" id="brand${brand.brandName}">
+                        <label class="form-check-label" for="brand${brand.brandName}">${brand.brandName}</label>
+                    </div>`;
+                brandContainer.insertAdjacentHTML("beforeend", checkbox);
+            });
+        } catch (error) {
+            console.error("Error loading brands:", error);
+        }
+    }
+
+    // 加載分類資料
+    async function loadCategories() {
+        try {
+            const response = await fetch("/categories");
+            const categories = await response.json();
+            const categorySelect = document.querySelector("#categorySelect");
+            categories.forEach(category => {
+                const option = `<option value="${category.categoryId}">${category.categoryName}</option>`;
+                categorySelect.insertAdjacentHTML("beforeend", option);
+            });
+        } catch (error) {
+            console.error("Error loading categories:", error);
+        }
+    }
+
+    // 構建篩選參數
+function buildQueryParams() {
+    const minPrice = document.getElementById("minPrice").value.trim();
+    const maxPrice = document.getElementById("maxPrice").value.trim();
+    const categoryId = document.getElementById("categorySelect").value.trim();
+    const brandIds = Array.from(document.querySelectorAll("#brandCheckboxContainer input:checked"))
+        .map(cb => cb.value)
+        .filter(value => value); // 過濾空值
+
+    const keywordInput = document.querySelector('input[name="keyword"]'); // 關鍵字輸入框
+    const keyword = keywordInput ? keywordInput.value.trim() : ""; // 檢查是否存在關鍵字輸入框
+    const startDate = document.getElementById("startDate").value.trim(); // 開始日期
+    const endDate = document.getElementById("endDate").value.trim(); // 結束日期
+
+    const queryParams = new URLSearchParams();
+
+    // 篩選條件
+    if (minPrice) queryParams.append("minPrice", minPrice);
+    if (maxPrice) queryParams.append("maxPrice", maxPrice);
+    if (categoryId && categoryId !== "選擇分類") queryParams.append("categoryId", categoryId);
+    if (brandIds.length > 0) queryParams.append("brandIds", brandIds.join(",")); // 品牌條件
+    if (keyword) queryParams.append("keyword", keyword); // 關鍵字條件
+    if (startDate) queryParams.append("startDate", startDate); // 開始日期
+    if (endDate) queryParams.append("endDate", endDate); // 結束日期
+
+    // 分頁設定
+    queryParams.append("page", currentPage);
+    queryParams.append("size", pageSize);
+
+    return queryParams.toString();
+}
+
+    // 加載商品
+    async function loadItems() {
+    try {
+        productGrid.innerHTML = `<div class="text-center">載入中...</div>`;
+        const queryParams = buildQueryParams();
+        const response = await fetch(`/itemSearch/filter?${queryParams}`);
+
+        if (!response.ok) throw new Error("篩選請求失敗");
+
+        const data = await response.json();
+
+        if (!data || !data.content) {
+            throw new Error("無法解析後端回傳資料");
+        }
+
+        renderItems(data);
+    } catch (error) {
+        console.error("篩選過程發生錯誤：", error);
+        productGrid.innerHTML = `<p class="text-center text-danger">篩選過程發生錯誤，請稍後再試。</p>`;
+    }
+}
+
+// 格式化價格為帶千位分隔符號
+function formatPrice(price) {
+    return new Intl.NumberFormat('zh-TW', {
+        style: 'currency',
+        currency: 'TWD',
+        minimumFractionDigits: 0 // 不顯示小數
+    }).format(price);
+}
+
+// 修改渲染商品的函數
+function renderItems(data) {
+    productGrid.innerHTML = "";
+    if (data.content.length === 0) {
+        productGrid.innerHTML = `<p class="text-center text-muted">未找到符合條件的商品</p>`;
+        return;
+    }
+
+    data.content.forEach(item => {
+        const minPrice = item.minPrice || 0; // 預設值防止 undefined
+        const maxPrice = item.maxPrice || 0;
+
+        const priceText = minPrice === maxPrice
+            ? `${formatPrice(minPrice)}` // 格式化單一價格
+            : `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`; // 格式化價格範圍
+
+        const productCard = `
+            <a href="/itemDisplay/${item.itemId}" class="product-item">
+                <div>
+                    <img src="${item.itemPhoto || '/images/default.jpg'}" alt="${item.itemName}">
+                </div>
+                <div class="product-info">
+                    <h5 class="product-name">${item.itemName}</h5>
+                    <p class="product-price">${priceText}</p>
+                </div>
+            </a>`;
+        productGrid.insertAdjacentHTML("beforeend", productCard);
+    });
+
+    renderPagination(data.totalPages, data.number);
+}
+
+    // 渲染分頁標籤
+    function renderPagination(totalPages, current) {
+    const paginationContainer = document.querySelector("#pagination");
+    paginationContainer.innerHTML = "";
+
+    for (let i = 0; i < totalPages; i++) {
+        const pageButton = document.createElement("button");
+        pageButton.textContent = i + 1;
+        pageButton.className = `btn mx-1 ${i === current ? "btn-primary current-page" : "btn-outline-primary"}`;
+
+        // 禁用當前頁面按鈕
+        if (i === current) {
+            pageButton.disabled = true;
+        } else {
+            pageButton.addEventListener("click", () => {
+                currentPage = i;
+                loadItems();
+            });
+        }
+        paginationContainer.appendChild(pageButton);
+    }
+}
+;
+</script>
+</body>
+</html>

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品收購文章後台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .search-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+	<div th:replace="~{layout/saHeader}"></div>
+    <div class="container mt-4">
+        <h2>查詢列表</h2>
+        
+        <!-- 搜尋區塊 -->
+        <div class="search-section">
+            <div class="row g-3 align-items-center">
+                <!-- 分類選擇 -->
+                <div class="col-md-2">
+                    <select class="form-select" id="category-filter">
+                        <option value="">請選擇分類</option>
+                        <option value="forumArticleId">文章編號</option>
+                        <option value="forumArticleTitle">文章標題</option>
+                        <option value="forumArticleContent">文章內容</option>
+                        <option value="userId">作者編號</option>
+                    </select>
+                </div>
+                
+                <!-- 搜尋框 -->
+                <div class="col-md-3">
+                    <input type="text" id="search-bar" class="form-control" placeholder="輸入搜尋條件..." disabled>
+                </div>
+                
+                <!-- 日期選擇 -->
+                <div class="col-md-5">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">起始日期</span>
+                                <input type="date" id="start-date-filter" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">結束日期</span>
+                                <input type="date" id="end-date-filter" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 按鈕組 -->
+                <div class="col-md-2">
+                    <button class="btn btn-secondary me-2" id="clear-button">清除</button>
+                    <button class="btn btn-primary" id="search-button">搜尋</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文章列表區塊 -->
+        <div class="mb-4">
+            <h2>文章列表</h2>
+            
+            <!-- 標籤欄 -->
+            <div class="tabs-container mb-3">
+                <ul class="nav nav-tabs" id="orderTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="allTab" href="#" onclick="selectTab('all')">全部</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="visibleTab" href="#" onclick="selectTab('visible')">顯示中</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="invisibleTab" href="#" onclick="selectTab('invisible')">隱藏中</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 表格 -->
+            <div class="table-responsive">
+                <table id="faTable" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th class="col-1">文章編號</th>
+                            <th class="col-2">文章標題</th>
+                            <th class="col-1">建立日期</th>
+                            <th class="col-2">商品圖片</th>
+                            <th class="col-3">文章內容</th>
+                            <th class="col-1">作者編號</th>
+                            <th class="col-1">顯示狀態</th>
+                            <th class="col-1">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="faTableBody">
+                        <!-- 資料將通過 JavaScript 動態插入 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分頁 -->
+            <nav aria-label="Page navigation" class="mt-3">
+                <ul class="pagination justify-content-center" id="pagination"></ul>
+            </nav>
+
+            <!-- 搜尋結果提示 -->
+            <div id="search-results" class="mt-3 text-center"></div>
+        </div>
+    </div>
+    <!-- 修改狀態 Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+			<div class="modal-header">
+			    <h5 class="modal-title" id="editModalLabel">修改文章狀態 - <span id="modalArticleTitle"></span></h5>
+			    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+				<div class="modal-body">
+				    <div class="mb-3">
+				        <label class="form-label">顯示狀態</label>
+				        <select class="form-select" id="statusSelect">
+				            <option value="1">顯示中</option>
+				            <option value="2">隱藏中</option>
+				        </select>
+				    </div>
+				    <div id="currentImage">
+				        <!-- 圖片將在 JavaScript 中動態插入 -->
+				    </div>
+				</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveChanges">儲存變更</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery 和 Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const categoryFilter = document.getElementById('category-filter');
+            const searchBar = document.getElementById('search-bar');
+            const startDateFilter = document.getElementById('start-date-filter');
+            const endDateFilter = document.getElementById('end-date-filter');
+            const searchButton = document.getElementById('search-button');
+            const clearButton = document.getElementById('clear-button');
+            let currentTab = 'all';
+
+            // 初始化搜尋框為禁用狀態
+            searchBar.disabled = true;
+
+            // 監聽分類選擇變更
+            categoryFilter.addEventListener('change', function() {
+                searchBar.disabled = !this.value;
+                if (!this.value) {
+                    searchBar.value = '';
+                }
+            });
+
+            // 清除按鈕功能
+            clearButton.addEventListener('click', function() {
+                // 清除輸入值
+                categoryFilter.value = '';
+                searchBar.value = '';
+                startDateFilter.value = '';
+                endDateFilter.value = '';
+                searchBar.disabled = true;
+                
+                // 重置標籤狀態
+                currentTab = 'all';
+                document.querySelectorAll('#orderTabs .nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                document.getElementById('allTab').classList.add('active');
+
+                // 重新載入第一頁的所有資料
+                searchArticles(0); // 使用現有的 searchArticles 函數，但是不帶任何搜尋參數
+            });
+
+            // 搜尋按鈕功能
+            searchButton.addEventListener('click', function() {
+                searchArticles();
+            });
+
+            // 修改標籤選擇功能
+            window.selectTab = function(tab) {
+                currentTab = tab;
+                document.querySelectorAll('#orderTabs .nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                document.getElementById(tab + 'Tab').classList.add('active');
+                
+                searchArticles();
+            };
+
+			// 搜尋文章函數
+			function searchArticles(page = 0) {
+			    const category = categoryFilter.value;
+			    const search = searchBar.value;
+			    const startDate = startDateFilter.value;
+			    const endDate = endDateFilter.value;
+			    
+			    let url = new URL('http://localhost:8080/forum/forumArticlesAll');
+			    let params = new URLSearchParams();
+			    
+			    // 添加基本參數
+			    params.append('page', page);
+			    params.append('size', 10);
+			    
+			    // 根據標籤設定狀態參數
+			    if (currentTab === 'visible') {
+			        params.append('status', '1');
+			    } else if (currentTab === 'invisible') {
+			        params.append('status', '2');
+			    }
+			    
+			    // 只有當類別和搜尋都有值時才添加
+			    if (category && search.trim()) {
+			        params.append('category', category);
+			        params.append('search', search.trim());
+			    }
+			    
+			    // 只有當兩個日期都有值時才添加
+			    if (startDate && endDate) {
+			        params.append('startDate', startDate);
+			        params.append('endDate', endDate);
+			    }
+			    
+			    url.search = params.toString();
+			    
+			    // 顯示載入中提示
+			    document.getElementById('search-results').textContent = '載入中...';
+			    
+			    fetch(url)
+			        .then(response => {
+			            if (!response.ok) {
+			                if (response.status === 400) {
+			                    throw new Error('請求參數錯誤');
+			                } else if (response.status === 500) {
+			                    throw new Error('伺服器錯誤');
+			                } else {
+			                    throw new Error('搜尋失敗');
+			                }
+			            }
+			            return response.json();
+			        })
+			        .then(data => {
+			            if (data && Array.isArray(data.content)) {
+			                updateTable(data.content);
+			                updatePagination(data);
+			                document.getElementById('search-results').textContent = 
+			                    `共找到 ${data.totalElements} 筆資料`;
+			            } else {
+			                throw new Error('回應格式錯誤');
+			            }
+			        })
+			        .catch(error => {
+			            console.error('搜尋失敗:', error);
+			            document.getElementById('search-results').textContent = error.message;
+			            // 清空表格
+			            document.getElementById('faTableBody').innerHTML = '';
+			            // 清空分頁
+			            document.getElementById('pagination').innerHTML = '';
+			        });
+			}
+			
+			// 在搜尋按鈕點擊事件中添加驗證
+			searchButton.addEventListener('click', function() {
+			    const category = categoryFilter.value;
+			    const search = searchBar.value;
+			    
+			    if (category && !search.trim()) {
+			        alert('請輸入搜尋內容');
+			        return;
+			    }
+			    
+			    if (!category && search.trim()) {
+			        alert('請選擇搜尋分類');
+			        return;
+			    }
+			    
+			    searchArticles();
+			});
+
+
+        // 更新分頁
+        function updatePagination(pageData) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            const totalPages = pageData.totalPages;
+            const currentPage = pageData.number;
+            
+            // 計算要顯示的頁碼範圍
+            let startPage = Math.max(0, currentPage - 2);
+            let endPage = Math.min(totalPages - 1, startPage + 4);
+            
+            // 如果結束頁碼小於總頁數，調整起始頁碼
+            if (endPage - startPage < 4) {
+                startPage = Math.max(0, endPage - 4);
+            }
+            
+            // 上一頁按鈕
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 0 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `
+                <a class="page-link" href="#" ${currentPage === 0 ? '' : 
+                    `onclick="window.searchArticles(${currentPage - 1}); return false;"`}>
+                    &laquo;
+                </a>`;
+            pagination.appendChild(prevLi);
+            
+            // 如果起始頁不是第一頁，顯示第一頁和省略號
+            if (startPage > 0) {
+                const firstLi = document.createElement('li');
+                firstLi.className = 'page-item';
+                firstLi.innerHTML = `
+                    <a class="page-link" href="#" onclick="window.searchArticles(0); return false;">1</a>`;
+                pagination.appendChild(firstLi);
+                
+                if (startPage > 1) {
+                    const ellipsisLi = document.createElement('li');
+                    ellipsisLi.className = 'page-item disabled';
+                    ellipsisLi.innerHTML = '<span class="page-link">...</span>';
+                    pagination.appendChild(ellipsisLi);
+                }
+            }
+            
+            // 頁碼按鈕
+            for (let i = startPage; i <= endPage; i++) {
+                const li = document.createElement('li');
+                li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                li.innerHTML = `
+                    <a class="page-link" href="#" onclick="window.searchArticles(${i}); return false;">
+                        ${i + 1}
+                    </a>`;
+                pagination.appendChild(li);
+            }
+            
+            // 如果結束頁不是最後一頁，顯示省略號和最後一頁
+            if (endPage < totalPages - 1) {
+                if (endPage < totalPages - 2) {
+                    const ellipsisLi = document.createElement('li');
+                    ellipsisLi.className = 'page-item disabled';
+                    ellipsisLi.innerHTML = '<span class="page-link">...</span>';
+                    pagination.appendChild(ellipsisLi);
+                }
+                
+                const lastLi = document.createElement('li');
+                lastLi.className = 'page-item';
+                lastLi.innerHTML = `
+                    <a class="page-link" href="#" onclick="window.searchArticles(${totalPages - 1}); return false;">
+                        ${totalPages}
+                    </a>`;
+                pagination.appendChild(lastLi);
+            }
+            
+            // 下一頁按鈕
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}`;
+            nextLi.innerHTML = `
+                <a class="page-link" href="#" ${currentPage === totalPages - 1 ? '' : 
+                    `onclick="window.searchArticles(${currentPage + 1}); return false;"`}>
+                    &raquo;
+                </a>`;
+            pagination.appendChild(nextLi);
+        }
+        
+        // 將 searchArticles 函數掛載到 window 對象上，使其可以從 onclick 事件中訪問
+        window.searchArticles = searchArticles;
+        
+        // 修改顯示狀態的判斷
+		function updateTable(articles) {
+		    const tableBody = document.getElementById('faTableBody');
+		    tableBody.innerHTML = '';
+		    
+		    articles.forEach(article => {
+		        // 檢查是否有圖片
+		        const hasImages = article.forumArticlePhotos && article.forumArticlePhotos.length > 0;
+		        const imageHtml = hasImages ? 
+		            article.forumArticlePhotos.map((photo, index) => 
+		                `<img src="http://localhost:8080/forum/images/${article.forumArticleId}/${index}" 
+		                    alt="商品圖片" style="max-width: 100px; max-height: 100px;">`
+		            ).join('') : '無圖片';
+		
+		        const row = document.createElement('tr');
+		        row.innerHTML = `
+		            <td>${article.forumArticleId}</td>
+		            <td>${escapeHtml(article.forumArticleTitle)}</td>
+		            <td>${formatDate(article.forumArticleCreatedDate)}</td>
+		            <td>${imageHtml}</td>
+		            <td>${escapeHtml(article.forumArticleContent)}</td>
+		            <td>${article.userId}</td>
+		            <td>${article.forumArticleStatus === 1 ? '顯示中' : '隱藏中'}</td>
+		            <td>
+		                <button class="btn btn-sm btn-primary" 
+		                    onclick='editArticle(${JSON.stringify({
+		                        forumArticleId: article.forumArticleId,
+		                        forumArticleStatus: article.forumArticleStatus,
+		                        forumArticlePhotos: article.forumArticlePhotos,
+		                        forumArticleTitle: article.forumArticleTitle
+		                    })})'>修改</button>
+		            </td>
+		        `;
+		        tableBody.appendChild(row);
+		    });
+		}
+
+		// Modal 修改文章函數
+		let currentEditingArticle = null;
+		window.editArticle = function(article) {
+			console.log(article);
+		    // 重置要刪除的圖片記錄
+    		imagesToDelete.clear();
+		    currentEditingArticle = article;
+		    
+		    // 設置 modal 的值
+		    document.getElementById('statusSelect').value = article.forumArticleStatus;
+		    document.getElementById('modalArticleTitle').textContent = article.forumArticleTitle;
+		    
+		    // 顯示當前圖片
+		    const currentImageDiv = document.getElementById('currentImage');
+		    if (article.forumArticlePhotos && article.forumArticlePhotos.length > 0) {
+			const imageHtml = article.forumArticlePhotos.map((photo, index) => 
+			    `<div class="card mb-3" data-photo-id="${photo.forumArticlePhotoId}">
+			        <div class="card-body">
+			            <div class="d-flex align-items-start">
+			                <div class="me-3">
+			                    <img src="http://localhost:8080/forum/images/${article.forumArticleId}/${index}" 
+			                        alt="當前圖片" class="img-thumbnail" style="max-width: 200px;">
+			                </div>
+			                <div class="flex-grow-1">
+			                    <h6 class="card-title">圖片 ${index + 1}</h6>
+			                    <p class="card-text small">檔名：${photo.forumArticlePhotoImg}</p>
+			                    <button class="btn btn-danger btn-sm" 
+			                        onclick="deletePhoto(${photo.forumArticlePhotoId}, '${photo.forumArticlePhotoImg}')">
+			                        刪除圖片
+			                    </button>
+			                </div>
+			            </div>
+			        </div>
+			    </div>`
+			).join('');
+		        
+		        currentImageDiv.innerHTML = imageHtml;
+		    } else {
+		        currentImageDiv.innerHTML = '<p class="text-center">無圖片</p>';
+		    }
+		    
+		    // 顯示 modal
+		    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+		    editModal.show();
+		};
+		
+		// 在最上面添加一個變數來記錄要刪除的圖片
+		let imagesToDelete = new Set();
+		
+		// 修改刪除單張圖片的函數
+		window.deletePhoto = function(photoId, fileName) {
+		    if (confirm(`確定要刪除圖片 "${fileName}" 嗎？`)) {
+		        // 不直接發送請求，而是標記該圖片
+		        imagesToDelete.add(photoId);
+		        
+		        // 視覺上隱藏該圖片（但實際上還沒刪除）
+		        const imageCard = document.querySelector(`[data-photo-id="${photoId}"]`);
+		        if (imageCard) {
+		            imageCard.style.opacity = '0.5';
+		            const deleteBtn = imageCard.querySelector('.btn-danger');
+		            if (deleteBtn) {
+		                deleteBtn.textContent = '取消刪除';
+		                deleteBtn.classList.remove('btn-danger');
+		                deleteBtn.classList.add('btn-secondary');
+		                deleteBtn.onclick = () => cancelDeletePhoto(photoId, fileName);
+		            }
+		        }
+		    }
+		};
+		
+		// 添加取消刪除的函數
+		window.cancelDeletePhoto = function(photoId, fileName) {
+		    imagesToDelete.delete(photoId);
+		    
+		    // 恢復圖片顯示
+		    const imageCard = document.querySelector(`[data-photo-id="${photoId}"]`);
+		    if (imageCard) {
+		        imageCard.style.opacity = '1';
+		        const cancelBtn = imageCard.querySelector('.btn-secondary');
+		        if (cancelBtn) {
+		            cancelBtn.textContent = '刪除圖片';
+		            cancelBtn.classList.remove('btn-secondary');
+		            cancelBtn.classList.add('btn-danger');
+		            cancelBtn.onclick = () => deletePhoto(photoId, fileName);
+		        }
+		    }
+		};
+		
+		// 修改儲存變更的邏輯
+		document.getElementById('saveChanges').addEventListener('click', function() {
+		    if (!currentEditingArticle) return;
+		    
+		    const newStatus = document.getElementById('statusSelect').value;
+		    
+		    // 準備要發送的數據，包含要刪除的圖片ID列表
+		    const updateData = {
+		        forumArticleId: currentEditingArticle.forumArticleId,
+		        forumArticleStatus: parseInt(newStatus),
+		        deletePhotoIds: Array.from(imagesToDelete)
+		    };
+		    
+		    // 發送更新請求
+		    fetch('http://localhost:8080/forum/updateArticleStatus', {
+		        method: 'PUT',
+		        headers: {
+		            'Content-Type': 'application/json',
+		        },
+		        body: JSON.stringify(updateData)
+		    })
+		    .then(response => {
+		        if (!response.ok) {
+		            throw new Error('更新失敗');
+		        }
+		        return response.json();
+		    })
+		    .then(data => {
+		        // 清空要刪除的圖片記錄
+		        imagesToDelete.clear();
+		        
+		        // 關閉 modal
+		        const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+		        modal.hide();
+		        
+		        // 重新載入當前頁面數據
+		        searchArticles();
+		        
+		        // 顯示成功訊息
+		        alert('更新成功');
+		    })
+		    .catch(error => {
+		        console.error('更新失敗:', error);
+		        alert('更新失敗，請稍後再試');
+		    });
+		});
+
+        // 日期格式化函數
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // HTML 跳脫函數
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+
+        // 初始載入
+        searchArticles();
+    });
+    </script>
+</body>
+</html>

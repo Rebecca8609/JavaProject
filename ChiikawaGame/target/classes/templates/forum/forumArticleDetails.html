@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/" lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品收購文章詳情</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+    <style>
+        .carousel-item img {
+            object-fit: cover;
+            aspect-ratio: 4/3;
+            max-width: 100%;
+            height: auto;
+        }
+        .article-tags {
+            margin-bottom: 15px;
+        }
+        .info-box, .description-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0 0 5px 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .description-value {
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .section-title {
+            background-color: #FFD700;
+            color: #000;
+            padding: 10px;
+            border-radius: 5px 5px 0 0;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 0;
+        }
+        .info-item {
+            margin-bottom: 10px;
+        }
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+            margin-right: 10px;
+        }
+        .info-value {
+            font-size: 1.1em;
+        }
+        .thumbnail-preview {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .thumbnail-preview img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            margin: 0 5px;
+            border: 2px solid #fff;
+            cursor: pointer;
+        }
+        .thumbnail-preview img.active {
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div th:replace="~{layout/userHeader}"></div>
+    <br/>
+	<br/>
+    <div class="container py-5">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                	<h1 class="card-title mb-3" th:text="${article.forumArticleTitle}">文章標題</h1>
+                        <button th:if="${session.user != null and session.user.userId == article.userInfo.userId}"
+                			class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editArticleModal">
+                			編輯文章
+        				</button>
+				</div>
+                <div class="article-tags mb-3">
+                    <span class="badge bg-dark me-2 fs-6" th:text="${article.forumArticleItemType}">分類</span>
+                    <span class="badge bg-warning me-2 fs-6" th:text="${article.forumArticleItemCondition}">商品狀態</span>
+                    <span class="text-muted">
+                        <i class="bi bi-clock"></i>
+                        <span th:text="${#dates.format(article.forumArticleCreatedDate, 'yyyy-MM-dd HH:mm')}">發布時間</span>
+                    </span>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div id="articleCarousel" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
+                                <div th:each="photo, status : ${article.forumArticlePhotos}" 
+                                     th:class="${status.index == 0 ? 'carousel-item active' : 'carousel-item'}">
+                                    <img th:src="@{/forum/images/{id}/{index}(id=${article.forumArticleId},index=${status.index})}" 
+                                         class="d-block w-100" alt="Article Image">
+                                </div>
+                            </div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#articleCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#articleCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                        </div>
+                        <div class="thumbnail-preview">
+                            <img th:each="photo, status : ${article.forumArticlePhotos}" 
+                                 th:src="@{/forum/images/{id}/{index}(id=${article.forumArticleId},index=${status.index})}"
+                                 th:class="${status.index == 0 ? 'active' : ''}"
+                                 th:attr="data-bs-target='#articleCarousel', data-bs-slide-to=${status.index}"
+                                 alt="Thumbnail">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h4 class="section-title">商品收購詳細</h4>
+                        <div class="info-box">
+                            <div class="info-item">
+                                <span class="info-label">收購價格：</span>
+								<span class="info-value">$<span th:text="${#numbers.formatInteger(article.forumArticlePrice, 1, 'COMMA')}">500</span></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">商品類型：</span>
+                                <span class="info-value" th:text="${article.forumArticleItemType}">玩偶</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">商品狀態：</span>
+                                <span class="info-value" th:text="${article.forumArticleItemCondition}">全新</span>
+                            </div>
+                        </div>
+                        <h4 class="section-title">收購文章內容</h4>
+                        <div class="description-box">
+                            <div class="description-value" th:text="${article.forumArticleContent}">文章內容</div>
+                        </div>
+                        <div class="mt-4 text-end">
+                            <a href="/forum/forumArticlesDisplay" class="btn btn-secondary me-2">返回首頁</a>
+                            <button class="btn btn-primary" onclick="contactAuthor()">聯絡他</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 編輯文章 Modal -->
+    <input type="hidden" id="articleId" th:value="${article.forumArticleId}">
+	<div class="modal fade" id="editArticleModal" tabindex="-1" aria-labelledby="editArticleModalLabel" aria-hidden="true">
+	    <div class="modal-dialog modal-lg">
+	        <div class="modal-content">
+	            <div class="modal-header">
+	                <h5 class="modal-title" id="editArticleModalLabel">編輯文章</h5>
+	                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+	            </div>
+	            <div class="modal-body">
+	                <form id="editArticleForm">
+	                    <div class="mb-3">
+	                        <label for="editTitle" class="form-label">文章標題</label>
+	                        <input type="text" class="form-control" id="editTitle" th:value="${article.forumArticleTitle}" required>
+	                    </div>
+	                    <div class="mb-3">
+	                        <label for="editPrice" class="form-label">收購價格</label>
+	                        <input type="number" class="form-control" id="editPrice" th:value="${article.forumArticlePrice}" required>
+	                    </div>
+	                    <div class="mb-3">
+	                        <label for="editItemType" class="form-label">商品類型</label>
+                        	<select class="form-select" id="editItemType" required>
+								<option th:selected="${article.forumArticleItemType == '模型/公仔'}" value="模型/公仔">模型/公仔</option>
+								<option th:selected="${article.forumArticleItemType == '動漫周邊'}" value="動漫周邊">動漫周邊</option>
+								<option th:selected="${article.forumArticleItemType == '玩偶'}" value="玩偶">玩偶</option>
+								<option th:selected="${article.forumArticleItemType == '漫畫/輕小說'}" value="漫畫/輕小說">漫畫/輕小說</option>
+								<option th:selected="${article.forumArticleItemType == '原聲帶/專輯'}" value="原聲帶/專輯">原聲帶/專輯</option>
+								<option th:selected="${article.forumArticleItemType == '文具/辦公用品'}" value="文具/辦公用品">文具/辦公用品</option>
+								<option th:selected="${article.forumArticleItemType == '其他'}" value="其他">其他</option>
+							</select>
+	                    </div>
+	                    <div class="mb-3">
+	                        <label for="editItemCondition" class="form-label">商品狀態</label>
+	                        <select class="form-select" id="editItemCondition" required>
+	                            <option value="全新" th:selected="${article.forumArticleItemCondition == '全新'}">全新</option>
+	                            <option value="二手" th:selected="${article.forumArticleItemCondition == '二手'}">二手</option>
+	                          	<option value="不限" th:selected="${article.forumArticleItemCondition == '不限'}">不限</option>
+	                        </select>
+	                    </div>
+	                    <div class="mb-3">
+	                        <label for="editContent" class="form-label">描述內容</label>
+	                        <textarea class="form-control" id="editContent" rows="5" th:text="${article.forumArticleContent}" style="resize:none" required></textarea>
+	                    </div>
+	                    <div class="mb-3">
+						    <label class="form-label">圖片預覽</label>
+						    <div id="imagePreview" class="d-flex flex-wrap gap-2 mb-2"></div>
+						    <input type="file" id="newImages" class="form-control" accept="image/*" multiple>
+						</div>
+						<!-- 裁切容器 -->
+						<div class="modal fade" id="cropperModal" tabindex="-1">
+						    <div class="modal-dialog modal-lg">
+						        <div class="modal-content">
+						            <div class="modal-header">
+						                <h5 class="modal-title">裁切圖片</h5>
+						                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+						            </div>
+						            <div class="modal-body">
+						                <div style="max-height: 500px;">
+						                    <img id="cropperImage" src="" style="display: block; max-width: 100%;">
+						                </div>
+						            </div>
+						            <div class="modal-footer">
+						                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+						                <button type="button" class="btn btn-primary" id="cropButton">確認裁切</button>
+						            </div>
+						        </div>
+						    </div>
+						</div>
+	                </form>
+	            </div>
+	            <div class="modal-footer">
+	                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+	                <button type="button" class="btn btn-primary" onclick="submitEdit()">更新</button>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script>
+    let currentImages = []; // 定義為全局變量
+    let existingImageIds = [];
+    
+    //聯絡他
+    function contactAuthor() {
+        alert('聯絡功能尚未實現');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // 編輯modal中
+        const editPriceInput = document.getElementById('editPrice');
+        if (editPriceInput) {
+            function formatPrice() {
+                editPriceInput.value = Math.floor(editPriceInput.value);
+            }
+            editPriceInput.addEventListener('input', formatPrice);
+            formatPrice(); // 初始格式化
+        }
+
+        // 為縮圖添加點擊事件
+        const thumbnails = document.querySelectorAll('.thumbnail-preview img');
+        thumbnails.forEach(thumb => {
+            thumb.addEventListener('click', function() {
+                const slideIndex = this.getAttribute('data-bs-slide-to');
+                const carousel = new bootstrap.Carousel(document.getElementById('articleCarousel'));
+                carousel.to(parseInt(slideIndex));
+
+                // 更新活動縮圖
+                thumbnails.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 監聽輪播事件以更新活動縮圖
+        const carouselElement = document.getElementById('articleCarousel');
+        carouselElement.addEventListener('slide.bs.carousel', function (event) {
+            const index = event.to;
+            thumbnails.forEach((thumb, i) => {
+                if (i === index) {
+                    thumb.classList.add('active');
+                } else {
+                    thumb.classList.remove('active');
+                }
+            });
+        });
+           
+        //Modal中圖片處理
+        const imagePreview = document.getElementById('imagePreview');
+	    const newImagesInput = document.getElementById('newImages');
+	    //let currentImages = [];
+	    const cropperModal = new bootstrap.Modal(document.getElementById('cropperModal'));
+	    let cropper;
+	    let currentFile;
+	    
+	    // 載入現有圖片
+	    function loadExistingImages() {
+	        currentImages = Array.from(document.querySelectorAll('.thumbnail-preview img')).map(img => ({
+	            src: img.src,
+	            id: img.getAttribute('data-index')
+	        }));
+	       	console.log('Loaded existing images:', currentImages); //檢查
+	        updateImagePreview();
+	    }
+   		
+  		// 更新圖片預覽
+	    function updateImagePreview() {
+	        imagePreview.innerHTML = '';
+	        currentImages.forEach((img, index) => {
+	            const imgContainer = document.createElement('div');
+	            imgContainer.className = 'position-relative';
+	            imgContainer.innerHTML = `
+	                <img src="${img.src}" alt="Preview" style="width: 100px; height: 100px; object-fit: cover;">
+	                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" data-index="${index}">X</button>
+	            `;
+	            imgContainer.querySelector('button').addEventListener('click', function() {
+	                if (confirm('確定要刪除這張圖片嗎？')) {
+	                    currentImages.splice(index, 1);
+	                    updateImagePreview();
+	                }
+	            });
+	            imagePreview.appendChild(imgContainer);
+	            console.log('Updated image preview:', currentImages); //檢查
+	        });
+	    }
+	    
+	    // 處理新上傳的圖片
+	    newImagesInput.addEventListener('change', function(e) {
+	        const files = Array.from(e.target.files);
+	        if (currentImages.length + files.length > 5) {
+	            alert('圖片總數不能超過5張');
+	            return;
+	        }
+	        currentFile = files[0];
+	        showCropper(URL.createObjectURL(currentFile));
+	        console.log('New file selected:', currentFile); //檢查
+	    });
+	    
+	    //裁切圖片
+	    function showCropper(src) {
+	        const cropperImage = document.getElementById('cropperImage');
+	        cropperImage.src = src;
+	        
+	        cropperModal.show();
+	        
+	        if (cropper) {
+	            cropper.destroy();
+	        }
+	
+	        cropper = new Cropper(cropperImage, {
+	            aspectRatio: 4/3,
+	            viewMode: 1,
+	            dragMode: 'move',
+	            autoCropArea: 1,
+	            restore: false,
+	            guides: false,
+	            center: false,
+	            highlight: false,
+	            cropBoxMovable: false,
+	            cropBoxResizable: false,
+	            toggleDragModeOnDblclick: false,
+	        });
+	    }
+	    
+	    document.getElementById('cropButton').addEventListener('click', function() {
+	        const canvas = cropper.getCroppedCanvas({
+	            width: 800,
+	            height: 600
+	        });
+
+	       
+	
+	        canvas.toBlob(function(blob) {
+	            const file = new File([blob], currentFile.name, { type: 'image/jpeg' });
+	            currentImages.push({ src: URL.createObjectURL(blob), file: file });
+	            updateImagePreview();
+	            cropperModal.hide();
+	        }, 'image/jpeg');
+	        console.log('Image cropped and added:', file); //檢查
+	    });
+	    
+	    
+	    // 在打開 modal 時載入現有圖片
+    	document.getElementById('editArticleModal').addEventListener('show.bs.modal', loadExistingImages);
+       });
+       
+       function submitEdit() {
+       	console.log('Submitting edit with currentImages:', currentImages);
+	   	const editTitle = document.getElementById('editTitle').value;
+	    const editPrice = document.getElementById('editPrice').value;
+	    const editContent = document.getElementById('editContent').value;
+	
+	    // 驗證標題長度
+	    if (editTitle.length > 30) {
+	        alert('標題不能超過30字');
+	        return;
+	    }
+	
+	    // 驗證內容長度
+	    if (editContent.length > 300) {
+	        alert('內容不能超過300字');
+	        return;
+	    }
+	
+	    // 驗證價格
+	    if (isNaN(editPrice) || editPrice <= 0) {
+	        alert('請輸入有效的價格');
+	        return;
+	    }
+	
+	    const formData = new FormData();
+	    formData.append('forumArticleId', document.getElementById('articleId').value);
+	    formData.append('forumArticleTitle', editTitle);
+	    formData.append('forumArticlePrice', editPrice);
+	    formData.append('forumArticleItemType', document.getElementById('editItemType').value);
+	    formData.append('forumArticleItemCondition', document.getElementById('editItemCondition').value);
+	    formData.append('forumArticleContent', editContent);
+	
+	    // 添加圖片
+	    currentImages.forEach((img, index) => {
+	        if (img.file) {
+	            formData.append('newImages', img.file);
+	        } else if (img.id) {
+	            existingImageIds.push(img.id);
+	        }
+	    });
+	
+	    if (existingImageIds.length > 0) {
+	        formData.append('existingImageIds', existingImageIds.join(','));
+	    }
+	    
+	    console.log('Current Images:', currentImages);
+		console.log('Existing Image IDs:', existingImageIds);
+		console.log('New Images:', Array.from(formData.getAll('newImages')));
+	
+	    fetch('/forum/editArticle', {
+	        method: 'POST',
+	        body: formData
+	    })
+	    .then(response => response.json())
+	    .then(data => {
+	        if (data.success) {
+	            alert('文章已成功更新');
+	            location.reload();
+	        } else {
+	            alert('更新失敗：' + data.message);
+	        }
+	    })
+	    .catch((error) => {
+	        console.error('Error:', error);
+	        alert('發生錯誤，請稍後再試');
+	    });
+	}
+    </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>廣告管理</title>
+<link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+<link href="https://unpkg.com/cropperjs/dist/cropper.css" rel="stylesheet">
+<style>
+  /* 垂直置中表格內容 */
+  #adTable td, #newAdTable td {
+      vertical-align: middle;
+  }
+  /* 圖片與按鈕水平排列 */
+  .image-container {
+      display: flex;
+      align-items: center;
+  }
+  .image-container img {
+      max-width: 450px; /* 增加圖片寬度為原來的兩倍 */
+      border-radius: 5px;
+  }
+  .image-container button {
+      margin-left: 10px; /* 圖片與按鈕間距 */
+  }
+  /* 裁切模態框 */
+  #cropperModal .modal-dialog {
+      max-width: 30%; /* 增加模態框寬度 */
+  }
+  #cropperImage {
+      max-width: 100%; /* 圖片寬度自適應 */
+      max-height: 700px; /* 限制圖片高度 */
+      display: block;
+      margin: 0 auto; /* 置中圖片 */
+  }
+</style>
+</head>
+<body>
+  <div th:replace="~{layout/saHeader}"></div>
+  <div class="container mt-4">
+      <!-- 查詢廣告 -->
+      <div class="mb-4">
+          <h2>查詢廣告</h2>
+          <input type="text" id="searchInput" class="form-control" placeholder="輸入廣告名稱來查詢" onkeyup="searchAdInfo()">
+      </div>
+      <br>
+      <!-- 新增廣告 -->
+      <h2>新增廣告</h2>
+      <table id="newAdTable" class="table table-striped align-middle">
+          <tr>
+              <td><label for="newAdName">廣告名稱</label><input type="text" id="newAdName" class="form-control" placeholder="廣告名稱"></td>
+              <td><label for="newAdInfo">廣告敘述</label><input type="text" id="newAdInfo" class="form-control" placeholder="廣告敘述"></td>
+              <td><label for="newAdImage">廣告圖片</label><input type="file" id="newAdImage" class="form-control" onchange="openCropper(this)"></td>
+              <td><button class="btn btn-primary mt-4" onclick="addAd()">新增</button></td>
+          </tr>
+      </table>
+      <br>
+      <!-- 廣告列表 -->
+      <h2>廣告列表</h2>
+      <table id="adTable" class="table table-striped align-middle">
+          <thead>
+              <tr>
+                  <th>廣告ID</th>
+                  <th>廣告名稱</th>
+                  <th>廣告敘述</th>
+                  <th>廣告圖片</th>
+                  <th>操作</th>
+              </tr>
+          </thead>
+          <tbody id="adTableBody"></tbody>
+      </table>
+  </div>
+
+  <!-- Cropper Modal -->
+  <div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title" id="cropperModalLabel">裁切圖片 (1300*433)</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                  <div style="text-align: center;">
+                      <img id="cropperImage">
+                  </div>
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                  <button type="button" class="btn btn-primary" onclick="cropAndSetImage()">裁切並儲存</button>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+  <script src="https://unpkg.com/cropperjs/dist/cropper.js"></script>
+  <script>
+      let cropper;
+      let currentFileInput;
+
+      function openCropper(input) {
+          const file = input.files[0];
+          if (file) {
+              currentFileInput = input;
+              const reader = new FileReader();
+              reader.onload = function (e) {
+                  const cropperImage = document.getElementById("cropperImage");
+                  cropperImage.src = e.target.result;
+                  if (cropper) {
+                      cropper.destroy();
+                  }
+                  cropper = new Cropper(cropperImage, {
+                      aspectRatio: 3 / 1, // 設置裁切比例
+                      viewMode: 1,
+                      autoCropArea: 1, // 預設裁切框佔據比例
+                      dragMode: 'move' // 啟用圖片拖動功能
+                  });
+                  const modal = new bootstrap.Modal(document.getElementById("cropperModal"));
+                  modal.show();
+              };
+              reader.readAsDataURL(file);
+          }
+      }
+
+      function cropAndSetImage() {
+          if (cropper) {
+              const canvas = cropper.getCroppedCanvas({
+                  width: 1300,
+                  height: 433
+              });
+
+              canvas.toBlob(blob => {
+                  const url = URL.createObjectURL(blob);
+
+                  const container = currentFileInput.parentElement.querySelector('.image-container');
+                  const previewImage = container.querySelector('img');
+                  previewImage.src = url;
+
+                  currentFileInput.file = blob;
+              }, "image/jpeg");
+
+              const modal = bootstrap.Modal.getInstance(document.getElementById("cropperModal"));
+              modal.hide();
+          }
+      }
+
+      function loadAdInfo() {
+          fetch("/adInfo/json")
+              .then(response => response.json())
+              .then(data => {
+                  const tableBody = document.getElementById("adTableBody");
+                  tableBody.innerHTML = "";
+                  data.forEach(ad => {
+                      const row = `
+                          <tr>
+                              <td>${ad.adId}</td>
+                              <td><input type="text" class="form-control ad-name" value="${ad.adName}"></td>
+                              <td><input type="text" class="form-control ad-info" value="${ad.adInfo}"></td>
+                              <td>
+                                  <div class="image-container">
+                                      <img src="data:image/jpeg;base64,${ad.adImageBase64}" alt="廣告圖片" id="preview-${ad.adId}">
+                                      <button class="btn btn-secondary" onclick="triggerFileInput(${ad.adId})">更換圖片</button>
+                                  </div>
+                                  <input type="file" class="form-control ad-image" id="file-${ad.adId}" style="display: none;" onchange="openCropper(this)">
+                              </td>
+                              <td><button class="btn btn-success" onclick="updateAd(${ad.adId}, this)">儲存</button></td>
+                          </tr>
+                      `;
+                      tableBody.insertAdjacentHTML("beforeend", row);
+                  });
+              })
+              .catch(error => console.error("Error:", error));
+      }
+
+      function triggerFileInput(adId) {
+          const fileInput = document.getElementById(`file-${adId}`);
+          fileInput.click();
+      }
+
+      function addAd() {
+          const newAd = new FormData();
+          newAd.append("adName", document.getElementById("newAdName").value);
+          newAd.append("adInfo", document.getElementById("newAdInfo").value);
+
+          if (currentFileInput && currentFileInput.file) {
+              newAd.append("adImage", currentFileInput.file);
+          } else {
+              newAd.append("adImage", document.getElementById("newAdImage").files[0]);
+          }
+
+          fetch("/adInfo/add", {
+              method: "POST",
+              body: newAd
+          })
+          .then(response => response.text())
+          .then(message => {
+              alert(message);
+              document.getElementById("newAdName").value = "";
+              document.getElementById("newAdInfo").value = "";
+              document.getElementById("newAdImage").value = "";
+              loadAdInfo();
+          })
+          .catch(error => console.error("Error:", error));
+      }
+
+      function updateAd(adId, button) {
+    const row = button.closest("tr");
+    const adName = row.querySelector(".ad-name").value.trim();
+    const adInfo = row.querySelector(".ad-info").value.trim();
+    const adImageInput = row.querySelector(".ad-image");
+
+    const updatedAd = new FormData();
+    updatedAd.append("adId", adId);
+    updatedAd.append("adName", adName);
+    updatedAd.append("adInfo", adInfo);
+
+    // 僅在需要時更新圖片
+    if (currentFileInput && currentFileInput.file) {
+        updatedAd.append("adImage", currentFileInput.file);
+    } else if (adImageInput && adImageInput.files.length > 0) {
+        updatedAd.append("adImage", adImageInput.files[0]);
+    }
+
+    fetch("/adInfo/update", {
+        method: "POST",
+        body: updatedAd
+    })
+    .then(response => response.text())
+    .then(message => {
+        alert(message);
+        loadAdInfo();
+    })
+    .catch(error => console.error("Error:", error));
+}
+
+      document.addEventListener("DOMContentLoaded", loadAdInfo);
+  </script>
+</body>
+</html>

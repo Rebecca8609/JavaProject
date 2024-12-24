@@ -1,0 +1,283 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org/" lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>會員註冊頁面</title>
+
+<!-- 導入Bootstrap -->
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+	rel="stylesheet">
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+	rel="stylesheet">
+
+<!-- 導入jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+<style>
+body {
+	background-color: white;
+	color: black;
+}
+
+.form-signin {
+	max-width: 330px;
+	padding: 15px;
+	margin: auto;
+	background-color: #dee2e6;
+	border-radius: 10px;
+	box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+}
+
+.form-signin input {
+	background-color: #ffffff;
+	border: none;
+	color: black;
+}
+
+.form-signin input::placeholder {
+	color: #6c757d;
+}
+
+.form-signin label {
+	color: #495057;
+}
+
+.btn-warning {
+	background-color: #ffc107;
+	color: black;
+	border: none;
+}
+</style>
+</head>
+
+<body class="text-center">
+
+
+
+	<!-- header -->
+	<!-- 引入 userHeader -->
+	<div th:replace="~{layout/userHeader}"></div>
+	<br>
+
+
+
+	<!-- 註冊區塊 -->
+
+	<main class="form-signin">
+		<form id="registerForm">
+
+
+			<br>
+			<h1 class="h3 mb-3 fw-normal">會員註冊</h1>
+			<br>
+
+			<div class="form-floating mb-3">
+				<input type="text" class="form-control" id="floatingUserAc"
+					placeholder="會員帳號(email)" name="userEmail" required>
+				<!-- 輸入區塊 -->
+				<label for="floatingUserAc">會員帳號(email)</label>
+			</div>
+
+			<div class="form-floating mb-3">
+				<input type="text" class="form-control" id="floatingUserName"
+					placeholder="會員姓名" name="userName" required>
+				<!-- 輸入區塊 -->
+				<label for="floatingUserName">會員姓名</label>
+			</div>
+
+			<div class="form-floating mb-3">
+				<input type="text" class="form-control" id="floatingIdCard"
+					placeholder="身分證字號" name="userIdNumber" required>
+				<!-- 輸入區塊 -->
+				<label for="floatingIdCard">身分證字號</label>
+			</div>
+
+			<div class="form-floating mb-3">
+				<input type="password" class="form-control" id="floatingPassword"
+					placeholder="密碼" name="userPassword" required>
+				<!-- 輸入區塊 -->
+				<label for="floatingPassword">密碼</label>
+			</div>
+
+
+
+			<div class="form-floating mb-3">
+				<input type="text" class="form-control" id="floatingUserbirthday"
+					placeholder="生日格式(YYYY-MM-DD)" name="userBirthday" required>
+				<!-- 輸入區塊 -->
+				<label for="floatingUserbirthday">生日</label>
+			</div>
+
+			<div class="form-floating mb-3">
+				<input type="text" class="form-control" id="floatingPhone"
+					placeholder="電話號碼" name="userTel" required>
+				<!-- 輸入區塊 -->
+				<label for="floatingPhone">電話號碼</label>
+			</div>
+
+			<button class="w-100 btn btn-lg btn-warning" type="submit">註冊</button>
+			<!-- 註冊按鈕 -->
+			<p class="mt-5 mb-3 text-muted">&copy; 2024 Company, Inc</p>
+		</form>
+	</main>
+
+	<!-- 註冊成功的 Modal (彈跳視窗) -->
+<div class="modal fade" id="registerSuccessModal" tabindex="-1" aria-labelledby="registerSuccessModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success">
+                    <h5 class="modal-title" id="successModalTitle">註冊成功</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="successModalBody">註冊成功，請登入！</div>
+                <div class="modal-footer">
+                    <button id="successCloseModalBtn" type="button" class="btn btn-primary" data-bs-dismiss="modal">前往登入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- 註冊失敗的 Modal (彈跳視窗) -->
+<div class="modal fade" id="registerFailModal" tabindex="-1" aria-labelledby="registerFailModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger">
+                    <h5 class="modal-title" id="failModalTitle">註冊失敗</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="failModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+	
+
+	<div class="container">
+		<!-- footer -->
+		<footer
+			class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+			<div class="col-md-4 d-flex align-items-center">
+				<a href="/"
+					class="mb-3 me-2 mb-md-0 text-muted text-decoration-none lh-1">
+					<svg class="bi" width="30" height="24">
+						<use xlink:href="#bootstrap"></use></svg>
+				</a> <span class="text-muted">© 2024 Company, Inc</span>
+			</div>
+
+			<ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+				<li class="ms-3"><a class="text-muted" href="#"><i
+						class="bi bi-twitter" style="font-size: 24px;"></i></a></li>
+				<li class="ms-3"><a class="text-muted" href="#"><i
+						class="bi bi-instagram" style="font-size: 24px;"></i></a></li>
+
+				<li class="ms-3"><a class="text-muted" href="#"><i
+						class="bi bi-facebook" style="font-size: 24px;"></i></a></li>
+			</ul>
+		</footer>
+	</div>
+
+
+
+	<!-- 導入Bootstrap JS -->
+	<script
+		src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+	<script>
+	
+		//----vv送出表單vv----
+	
+     	$(document).ready(function() {
+    	$('#registerForm').on('submit', function(e) {
+        e.preventDefault();// 防止表單默認提交行為
+
+        
+		
+        const formData = {
+            userEmail: $('#floatingUserAc').val().trim(),
+            userName: $('#floatingUserName').val().trim(),
+            userIdNumber: $('#floatingIdCard').val().trim(),
+            userPassword: $('#floatingPassword').val().trim(),
+            userBirthday: $('#floatingUserbirthday').val().trim(),
+            userTel: $('#floatingPhone').val().trim()
+        };
+
+        // 在這裡打印發送的資料
+            console.log('Sending data:', JSON.stringify(formData));
+		
+		//----^^送出表單^^----
+		
+        // ----vv發送AJAX請求到後端vv----
+        
+        $.ajax({
+    		url: '/api/register',
+    		type: 'POST',
+    		contentType: 'application/json',
+    		dataType: 'json',
+    		data: JSON.stringify(formData), // 發送的資料
+    		success: function(response) {
+        	console.log('後端回應:', response);
+        
+        // ----^^發送AJAX請求到後端^^----
+        	
+        if (response.status === 'fail' && response.errors) {
+            // 顯示錯誤訊息
+            
+            let errorMessages = '<ul>';
+            response.errors.forEach(function(error) {
+                errorMessages += `<li>${error}</li>`;
+            });
+            errorMessages += '</ul>';
+            $('#failModalBody').html(errorMessages);  // 更新 modal 內容
+            $('#registerFailModal').modal('show');
+        } else {
+            // 註冊成功
+            $('#registerSuccessModal').modal('show');
+            
+            $('#successCloseModalBtn').off('click').on('click', function() {
+            window.location.href = '/login';
+            });
+        
+        }
+    },
+    error: function(xhr, status, error) {
+        console.log('請求失敗:', error);
+        console.log('錯誤回應:', xhr.responseText); // 這會顯示錯誤訊息
+                
+        // 嘗試從 responseText 或 responseJSON 解析錯誤訊息
+        try {
+            var errorResponse = JSON.parse(xhr.responseText);
+            if (errorResponse.status === 'fail' && errorResponse.errors) {
+                // 顯示錯誤訊息
+                
+                
+                
+                let errorMessages = '<ul>';
+                errorResponse.errors.forEach(function(error) {
+                    errorMessages += `<li>${error}</li>`;
+                });
+                errorMessages += '</ul>';
+                $('#failModalBody').html(errorMessages);  // 更新 modal 內容
+            } else {
+                $('#failModalBody').html('系統錯誤，請稍後再試！');
+            }
+        } catch (e) {
+            $('#failModalBody').html('系統錯誤，請稍後再試！');
+        }
+
+        // 顯示錯誤的 modal
+        $('#registerFailModal').modal('show');
+			}
+		});
+	});
+});
+        
+        
+</script>
+</body>
+</html>

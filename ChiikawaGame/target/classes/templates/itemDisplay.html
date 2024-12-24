@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 給 JS 抓取商品 ID 的 meta -->
+<meta name="itemId" th:content="${item.itemId}" />
+
+<title th:text="${item.itemName}">商品展示</title>
+
+<!-- 引入 Bootstrap CSS -->
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+	rel="stylesheet">
+<script
+	src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<style>
+.main-content {
+	padding-top: 80px; /* 根據 Header 的高度進行調整 */
+	background-color: #ffffff; /* 主內容背景色 */
+}
+
+/* 確保與首頁一致的 section 樣式 */
+.section-container {
+	background-color: #f8f9fa;
+	border-radius: 10px;
+	padding: 20px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+	margin-bottom: 20px;
+}
+
+.product-display {
+	display: flex;
+	gap: 20px;
+}
+
+.product-gallery {
+	flex: 2;
+}
+
+.product-gallery .main-image {
+	width: auto;
+	max-width: 100%;
+	max-height: 500px;
+	margin: 0 auto;
+	border-radius: 8px;
+	object-fit: contain;
+}
+
+.product-gallery .thumbnail-row {
+	margin-top: 10px;
+	display: flex;
+	gap: 10px;
+}
+
+.product-gallery .thumbnail {
+	width: 80px;
+	height: 80px;
+	border-radius: 8px;
+	cursor: pointer;
+	object-fit: cover;
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-gallery .thumbnail:hover {
+	transform: scale(1.05);
+	box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.product-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.product-info h3 {
+	font-size: 1.8em;
+	font-weight: bold;
+}
+
+.product-info .price {
+	font-size: 1.6em;
+	color: #e74c3c;
+	font-weight: bold;
+}
+
+.product-info .action-buttons {
+	margin-top: 20px;
+	display: flex;
+	gap: 10px;
+}
+
+.btn-custom {
+	font-size: 1.2em;
+	border-radius: 8px;
+	padding: 10px 20px;
+}
+
+.btn-add-cart {
+	background-color: #ff9800;
+	color: white;
+	border: none;
+}
+
+.btn-add-cart:hover {
+	background-color: #e68a00;
+}
+
+.btn-buy-now {
+	background-color: #4caf50;
+	color: white;
+	border: none;
+}
+
+.btn-buy-now:hover {
+	background-color: #43a047;
+}
+
+/* 統一選項框的樣式 */
+.form-select {
+	height: 45px;
+	font-size: 1rem;
+	border-radius: 8px;
+}
+
+/* 商品名稱樣式 */
+.product-title {
+	background-color: #FFD700;
+	color: #000;
+	padding: 10px;
+	border-radius: 5px;
+	font-weight: bold;
+	margin-bottom: 15px;
+	font-size: 1.8em;
+}
+
+/* 新增標題背景樣式 */
+.section-title {
+	background-color: #FFD700;
+	color: #000;
+	padding: 10px;
+	border-radius: 5px;
+	font-weight: bold;
+	margin-bottom: 15px;
+}
+
+/* 單人評價的框架樣式 */
+.review-item {
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	padding: 15px;
+	margin-bottom: 15px;
+	background-color: #fefefe;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.review-header p {
+	margin: 5px 0;
+	font-weight: bold;
+}
+
+.review-body p {
+	margin: 5px 0;
+	color: #555;
+	font-size: 0.95em;
+}
+
+.rating-filter {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.star-buttons, .extra-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+/* 星級按鈕樣式 */
+.filter-btn {
+	padding: 8px 12px;
+	border: none;
+	border-radius: 5px;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: background-color 0.2s, color 0.2s;
+}
+
+.star-btn {
+	background-color: black;
+	color: white;
+}
+
+.star-btn:hover {
+	background-color: #444;
+}
+
+.filter-btn.active {
+	background-color: #e74c3c;
+	color: white;
+}
+
+.filter-btn:hover {
+	background-color: #f39c12;
+}
+
+/* 分頁按鈕：當前頁時改為藍色 */
+.page-item.active .page-link {
+	background-color: #0d6efd !important; /* 藍色 */
+	color: #fff !important;
+	border: none !important;
+}
+
+/* 不可點擊效果 (pointer-events: none) */
+.page-item.disabled .page-link {
+	pointer-events: none;
+	background-color: #ccc;
+	color: #666;
+}
+
+/* 修改上一張、下一張按鈕顏色 (輪播) */
+.carousel-control-prev-icon, .carousel-control-next-icon {
+	filter: invert(100%);
+	opacity: 0.8;
+}
+
+.carousel-control-prev-icon:hover, .carousel-control-next-icon:hover {
+	opacity: 1;
+}
+</style>
+</head>
+<body>
+	<!-- 引入 Header -->
+	<div th:replace="~{layout/userHeader}"></div>
+
+	<div class="main-content">
+		<div class="container my-4">
+
+			<!-- 商品展示 -->
+			<section class="section-container">
+				<div class="product-display">
+					<!-- 左側圖片區域 -->
+					<div class="product-gallery">
+						<div id="productCarousel" class="carousel slide">
+							<!-- 大圖 -->
+							<div class="carousel-inner">
+								<!-- 使用 Thymeleaf 動態加載圖片 -->
+								<div th:each="photo, iterStat : ${photos}" class="carousel-item"
+									th:classappend="${iterStat.index == 0} ? 'active'">
+									<img th:src="@{'/item/photo?id=' + ${photo.id}}"
+										class="d-block w-100 main-image" alt="商品圖片"
+										onerror="this.src='/images/placeholder.png';">
+								</div>
+							</div>
+
+							<!-- 左右切換按鈕 -->
+							<button class="carousel-control-prev" type="button"
+								data-bs-target="#productCarousel" data-bs-slide="prev">
+								<span class="carousel-control-prev-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">上一張</span>
+							</button>
+							<button class="carousel-control-next" type="button"
+								data-bs-target="#productCarousel" data-bs-slide="next">
+								<span class="carousel-control-next-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">下一張</span>
+							</button>
+						</div>
+
+						<!-- 縮圖區 -->
+						<div class="thumbnail-row">
+							<img th:each="photo, iterStat : ${photos}"
+								th:src="@{'/item/photo?id=' + ${photo.id}}" class="thumbnail"
+								th:data-bs-target="'#productCarousel'"
+								th:data-bs-slide-to="${iterStat.index}" alt="商品縮圖"
+								onerror="this.src='/images/placeholder.png';">
+						</div>
+					</div>
+
+					<!-- 右側資訊區域 -->
+					<div class="product-info">
+						<div class="product-title" th:text="${item.itemName}">商品名稱</div>
+						<p class="price" id="priceDisplay"
+							th:text="'NT$ ' + ${#numbers.formatInteger(minPrice, 0, 'DEFAULT')} + ' - ' + ${#numbers.formatInteger(maxPrice, 0, 'DEFAULT')}">
+							NT$ 0 - 0</p>
+						<div class="shipping-method mt-3">
+							<label class="form-label">上架時間</label>
+							<div class="p-2 border rounded"
+								style="background-color: #f8f9fa;">
+								<span th:text="${item.itemDate}"></span>
+							</div>
+						</div>
+
+						<div class="shipping-method mt-3">
+							<label class="form-label">商品位置</label>
+							<div class="p-2 border rounded"
+								style="background-color: #f8f9fa;">
+								<span th:text="${item.itemLocation}"></span>
+							</div>
+						</div>
+
+						<div class="shipping-method mt-3">
+							<label class="form-label">運送方式 (寫死)</label>
+							<div class="p-2 border rounded"
+								style="background-color: #f8f9fa;">宅配 / 店到店 / 面交</div>
+						</div>
+
+						<div class="size-options mt-3">
+							<label for="sizeSelect" class="form-label">商品選項</label> <select
+								id="sizeSelect" class="form-select">
+								<option th:each="option : ${sizeOptions}"
+									th:value="${option.id}"
+									th:attr="data-price=${option.optionPrice}, data-stock=${option.quantity}"
+									th:text="${option.optionName}">選擇尺寸</option>
+							</select>
+						</div>
+
+						<div class="quantity-options mt-3">
+							<label class="form-label">數量</label>
+							<div class="d-flex align-items-center">
+								<button class="btn btn-outline-secondary" id="decreaseQty">-</button>
+								<input type="text" id="quantityInput"
+									class="form-control mx-2 text-center" style="width: 60px;"
+									value="1" readonly>
+								<button class="btn btn-outline-secondary" id="increaseQty">+</button>
+							</div>
+						</div>
+						<div
+							class="action-buttons d-flex justify-content-end align-items-center mt-4">
+							<button class="btn btn-add-cart btn-custom me-3">加入購物車</button>
+							<button class="btn btn-buy-now btn-custom">直接購買</button>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- 賣家資訊 -->
+			<section class="section-container">
+				<h4 class="section-title">
+					<span th:text="${sellerName}">賣家名稱</span> <a
+						th:href="@{/sellerInfo/{userId}(userId=${item.userInfo.userId})}"
+						class="btn btn-sm"
+						style="background-color: #000; color: #fff; border: none;">查看賣場</a>
+					<a
+						th:href="@{'/messages/send?recipientId=' + ${item.userInfo.userId}}"
+						class="btn btn-sm"
+						style="background-color: #000; color: #fff; border: none;">私訊</a>
+				</h4>
+				<div class="seller-info">
+					<p>
+						<strong>商品數量：</strong> <span th:text="${sellerItemCount}">0</span>
+						件
+					</p>
+					<p>
+						<strong>評價數量：</strong> <span th:text="${sellerTotalReviews}">0</span>
+						筆
+					</p>
+				</div>
+			</section>
+
+			<!-- 商品詳細資訊 -->
+			<section class="section-container">
+				<h4 class="section-title">商品詳細資訊</h4>
+				<div class="product-details">
+					<div th:text="${item.itemInfo}">商品詳細資訊不可用</div>
+				</div>
+			</section>
+
+			<!-- 商品評價（前端小分頁），無上下頁，當前頁藍色 & 不可點擊 -->
+			<section class="section-container">
+				<h4 class="section-title">商品評價</h4>
+
+				<div
+					class="rating-summary d-flex align-items-center justify-content-between">
+					<!-- 總評分 -->
+					<div class="average-rating d-flex justify-content-center me-3">
+						<h1 class="mb-1">
+							<span
+								th:text="${averageRating != null ? #numbers.formatDecimal(averageRating, 1, 1) : '0.0'}">4.8</span>
+							<span>/ 5</span> <span><i class="fa fa-star text-warning"></i></span>
+						</h1>
+					</div>
+
+
+					<!-- 星級篩選區 -->
+					<div class="rating-filter d-flex flex-wrap">
+						<button class="filter-btn star-btn" data-star="all">
+							全部 ( <span th:text="${totalReviews}"></span> )
+						</button>
+						<div class="star-buttons d-flex gap-2 mt-2">
+							<button class="filter-btn star-btn" data-star="5">5 星</button>
+							<button class="filter-btn star-btn" data-star="4">4 星</button>
+							<button class="filter-btn star-btn" data-star="3">3 星</button>
+							<button class="filter-btn star-btn" data-star="2">2 星</button>
+							<button class="filter-btn star-btn" data-star="1">1 星</button>
+						</div>
+					</div>
+				</div>
+				<br>
+
+				<!-- 評價列表（由 JS 動態產生） -->
+				<div class="review-list">
+					<!-- 原本 th:each="review : ${reviews}" ... 已註解/移除 -->
+				</div>
+
+				<!-- 分頁區：只有頁碼，無上下頁 -->
+				<nav class="pagination-container mt-4" aria-label="評論分頁">
+					<ul class="pagination justify-content-center">
+						<!-- JS 動態插入 -->
+					</ul>
+				</nav>
+			</section>
+		</div>
+	</div>
+
+	<!-- 轉換後端 List<Reviews> 為 JS 陣列供前端小分頁使用 -->
+	<script th:inline="javascript">
+        let allReviews = /*[[${reviews}]]*/ [];
+    </script>
+
+	<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // -----------------------------
+    // 數量、價格切換 (原本功能)
+    // -----------------------------
+    const quantityInput = document.getElementById('quantityInput');
+    const decreaseBtn = document.getElementById('decreaseQty');
+    const increaseBtn = document.getElementById('increaseQty');
+    const sizeSelect = document.getElementById('sizeSelect');
+    const priceDisplay = document.getElementById("priceDisplay");
+
+    let maxStock = 1;
+
+    const updateMaxStock = () => {
+        const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+        maxStock = parseInt(selectedOption.getAttribute('data-stock')) || 1;
+        quantityInput.value = 1;
+    };
+    updateMaxStock();
+    sizeSelect.addEventListener('change', updateMaxStock);
+
+    decreaseBtn.addEventListener('click', () => {
+        let currentQty = parseInt(quantityInput.value);
+        if (currentQty > 1) {
+            quantityInput.value = currentQty - 1;
+        }
+    });
+
+    increaseBtn.addEventListener('click', () => {
+        let currentQty = parseInt(quantityInput.value);
+        if (currentQty < maxStock) {
+            quantityInput.value = currentQty + 1;
+        }
+    });
+
+    const formatPrice = (price) => `NT$ ${Number(price).toLocaleString('zh-TW')}`;
+    const updatePrice = () => {
+        const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+        const selectedPrice = selectedOption.getAttribute("data-price");
+        priceDisplay.textContent = selectedPrice ? formatPrice(selectedPrice) : "NT$ 0";
+    };
+    updatePrice();
+    sizeSelect.addEventListener("change", updatePrice);
+
+
+    // -----------------------------
+    // 評論 + 分頁 + 星級篩選
+    // -----------------------------
+    // 1) 取得容器
+    const reviewsContainer = document.querySelector(".review-list");
+    const paginationContainer = document.querySelector(".pagination-container .pagination");
+    // 2) 取得星級按鈕
+    const starButtons = document.querySelectorAll(".filter-btn.star-btn");
+
+    // 3) 後端傳來的全部評論 (在上方 script th:inline="javascript" 裡 allReviews = [...])
+    //    若沒在 global，也可用: let allReviews = window.allReviews || [];
+    //    這裡假設 allReviews 已存在
+
+    // 分頁 + 篩選狀態
+    let currentPage = 1;         // 當前頁(1-based)
+    const reviewsPerPage = 5;    // 每頁5筆
+    let totalPages = 1;          // 總頁數(動態計算)
+    let currentStarFilter = null; // null 代表「全部」，1~5代表星級
+
+    // ★ 綁定星級按鈕
+    starButtons.forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            const star = e.target.dataset.star; // 讀 data-star
+            if (star === "all") {
+                currentStarFilter = null;
+            } else {
+                currentStarFilter = parseInt(star, 10);
+            }
+            // 切換篩選後，重置回第1頁
+            currentPage = 1;
+            renderReviews();
+            renderPagination();
+        });
+    });
+    
+    function createStars(evaluation) {
+    let starHTML = "";
+    for (let i = 0; i < 5; i++) {
+        if (i < evaluation) {
+            // 亮星(黃色)
+            starHTML += `<span style="color: gold;">★</span>`;
+        } else {
+            // 暗星(黑色)
+            starHTML += `<span style="color: black;">★</span>`;
+        }
+    }
+    return starHTML;
+}
+
+    // 首次載入
+    renderReviews();
+    renderPagination();
+
+
+    // -----------------------------
+    // 函式：取得「篩選 + 分頁」後的評論
+    // -----------------------------
+    function getFilteredReviews() {
+        // (1) 星級篩選
+        let filtered = [];
+        if (currentStarFilter === null) {
+            filtered = allReviews; // 全部
+        } else {
+            filtered = allReviews.filter(r => r.reviewEvaluation === currentStarFilter);
+        }
+
+        // (2) 分頁計算
+        totalPages = Math.ceil(filtered.length / reviewsPerPage);
+
+        // (3) 取目前頁的區段
+        const startIndex = (currentPage - 1) * reviewsPerPage;
+        const endIndex = Math.min(startIndex + reviewsPerPage, filtered.length);
+
+        return filtered.slice(startIndex, endIndex);
+    }
+
+    // -----------------------------
+    // 函式：渲染評論列表
+    // -----------------------------
+    function renderReviews() {
+    reviewsContainer.innerHTML = "";
+    const pageReviews = getFilteredReviews(); // 你的篩選+分頁函式
+
+    if (!pageReviews || pageReviews.length === 0) {
+        reviewsContainer.innerHTML = "<p>目前沒有符合條件的評價。</p>";
+        return;
+    }
+
+    pageReviews.forEach(r => {
+        // 產生「亮星用黃、暗星用黑」的 5 顆星
+        const stars = createStars(r.reviewEvaluation);
+
+        const dateStr = r.reviewDate
+            ? new Date(r.reviewDate).toLocaleString("zh-TW")
+            : "無日期";
+
+        const reviewHtml = `
+            <div class="review-item">
+                <div class="review-header">
+                    <p><strong>用戶ID：***</strong>${r.reviewBuyerId ?? "匿名用戶"}**</p>
+                    <p><strong>評價：</strong>${stars}</p>
+                    <p><strong>時間：</strong>${dateStr}</p>
+                </div>
+                <div class="review-body">
+                    <p>${r.reviewComment ?? "無評論"}</p>
+                </div>
+            </div>
+        `;
+        reviewsContainer.innerHTML += reviewHtml;
+    });
+}
+
+    // -----------------------------
+    // 函式：渲染分頁按鈕
+    // -----------------------------
+    function renderPagination() {
+        paginationContainer.innerHTML = "";
+
+        // 先重新取得 totalPages
+        // (因為 getFilteredReviews() 已更新 totalPages)
+        if (totalPages <= 1) return;
+
+        for (let i = 1; i <= totalPages; i++) {
+            const pageLi = document.createElement("li");
+            pageLi.classList.add("page-item");
+
+            const pageA = document.createElement("a");
+            pageA.classList.add("page-link");
+            pageA.href = "#";
+            pageA.textContent = i;
+
+            if (i === currentPage) {
+                pageLi.classList.add("active");
+                pageA.style.pointerEvents = "none"; 
+            } else {
+                pageA.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    currentPage = i;
+                    renderReviews();
+                    renderPagination();
+                });
+            }
+
+            pageLi.appendChild(pageA);
+            paginationContainer.appendChild(pageLi);
+        }
+    }
+});
+
+    </script>
+</body>
+</html>

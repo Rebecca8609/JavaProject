@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+   <meta charset="UTF-8">
+   <title>我的會員中心</title>
+   <!-- Import Bootstrap CSS -->
+   <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+   <link th:href="@{/css/custom.css}" rel="stylesheet">
+   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+   <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+   <script th:src="@{/js/jquery.min.js}"></script>
+   
+   <style>
+       #mainContent {
+           width: 70%;
+           max-width: 1400px;
+           min-width: 900px;
+           margin: 0 auto;
+           padding: 32px;
+           border-radius: 10px;
+       }
+
+       .form-title {
+           font-size: 2rem;
+           font-weight: bold;
+           margin-bottom: 20px;
+           text-align: center;
+       }
+
+       .form-control {
+           width: 100%;
+           max-width: 1000px;
+           margin: 0 auto;
+       }
+
+       .btn-custom {
+           height: 50px;
+           font-size: 1.2rem;
+       }
+   </style>
+</head>
+<body>
+   <!-- 引入 userHeader -->
+   <div th:replace="~{layout/userHeader}"></div>
+
+   <!-- Flexbox -->
+   <div class="d-flex" style="height: 100vh;">
+       <!-- 引入側邊欄 -->
+       <div th:replace="~{layout/memberCenterSidebar}"></div>
+
+       <!-- 主要內容 -->
+       <div id="mainContent" class="p-4">
+           <h2 class="form-title">我的帳戶</h2>
+           <div id="contentArea">
+               <p>請繼續點選左側選單項目以編輯內容。</p>
+           </div>
+       </div>
+   </div>
+
+   <script>
+       const contentArea = document.getElementById('contentArea');
+       let userInfo = null; // 存放用戶資料的全域變數
+
+       document.addEventListener("DOMContentLoaded", () => {
+           const profileLink = document.getElementById("profileLink");
+           if (profileLink) {
+               profileLink.addEventListener("click", function (event) {
+                   event.preventDefault();
+                   loadProfileContent();
+               });
+           }
+           
+           const passwordupdate = document.getElementById("passwordupdate");
+           if (passwordupdate) {
+               passwordupdate.addEventListener("click", function (event) {
+                   event.preventDefault();
+                   loadPassword();
+               });
+           }
+           
+           
+           const paymentLink = document.getElementById("paymentLink");
+           if (paymentLink) {
+               paymentLink.addEventListener("click", function (event) {
+                   event.preventDefault();
+                   loadPaymentContent();
+               });
+           }
+           const addressLink = document.getElementById("addressLink");
+           if (addressLink) {
+               addressLink.addEventListener("click", function (event) {
+                   event.preventDefault();
+                   loadAddressContent();
+               });
+           }
+
+           loadProfileContent(); // 頁面加載時預設加載個人檔案
+       });
+
+
+
+       function loadProfileContent() {
+           fetch(`/loginData?timestamp=${new Date().getTime()}`)
+               .then(response => {
+                   if (!response.ok) {
+                       throw new Error("未登入，請先登入後再嘗試");
+                   }
+                   return response.json();
+               })
+               .then(data => {
+                   userInfo = data; // 將資料存入全域變數
+                   renderProfileForm(userInfo);
+               })
+               .catch(error => {
+                   console.error("加載失敗：", error);
+                   contentArea.innerHTML = `<p>無法加載個人資料，請稍後再試。</p>`;
+               });
+       }
+       
+
+
+       function renderProfileForm(userInfo) {
+           contentArea.innerHTML = `
+               <h4 class="form-title">管理個人檔案</h4>
+               <form id="profileForm" class="needs-validation" novalidate style="max-width: 600px; margin: 0 auto;">
+    <div class="mb-3">
+        <h5>我的姓名</h5>
+        <div class="input-group">
+            <input type="text" class="form-control shadow-sm rounded" id="firstName" value="${userInfo.userName}" required>
+            <span class="input-group-text"><i class="bi bi-pencil-square"></i></span>
+        </div>
+    </div>
+    <div class="mb-3">
+        <h5>我的Email</h5>
+        <div class="input-group">
+            <input type="email" class="form-control shadow-sm rounded" id="email" value="${userInfo.userEmail}" readonly>
+            <span class="input-group-text"><i class="bi bi-x-circle-fill text-danger"></i></span>
+        </div>
+    </div>
+    <div class="mb-3">
+        <h5>我的生日</h5>
+        <div class="input-group">
+            <input type="text" class="form-control shadow-sm rounded" id="birthday" value="${userInfo.userBirthday}" readonly>
+            <span class="input-group-text"><i class="bi bi-x-circle-fill text-danger"></i></span>
+        </div>
+    </div>
+    <div class="mb-3">
+        <h5>我的電話</h5>
+        <div class="input-group">
+            <input type="text" class="form-control shadow-sm rounded" id="phone" value="${userInfo.userTel}" required>
+            <span class="input-group-text"><i class="bi bi-pencil-square"></i></span>
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary btn-custom mt-3 w-100 shadow-sm rounded" onclick="updateMember()">
+        修改個人資料
+    </button>
+</form>
+           `;
+       }
+
+       function updateMember() {
+          const userName = document.getElementById("firstName").value.trim();
+    const userEmail = document.getElementById("email").value.trim();
+    const userTel = document.getElementById("phone").value.trim();
+    let userBirthday = document.getElementById("birthday").value.trim();
+
+           // 填充未修改欄位的值
+           const updatedMember = {
+                userName: userName || userInfo.userName,
+        userEmail: userEmail || userInfo.userEmail,
+        userBirthday: userBirthday || userInfo.userBirthday,
+        userTel: userTel || userInfo.userTel,
+           };
+
+           fetch("/memberCenter/profile/update", {
+               method: "PUT",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify(updatedMember)
+           })
+               .then(response => response.json())
+               .then(updatedData => {
+                   
+                   
+                   alert("資料更新成功！");
+                   loadProfileContent(); // 更新後重新加載內容
+                   
+                    // 更新按鈕名稱
+            		const mantleDropdown = document.getElementById("mantleDropdown");
+            		if (mantleDropdown) {
+                		mantleDropdown.textContent = updatedData.userName || "未知用戶";
+            }
+               })
+               .catch(error => {
+                   console.error("更新失敗：", error);
+                   alert("更新失敗，請稍後再試！");
+               });
+       }
+       
+       function loadPassword() {
+    contentArea.innerHTML = `
+        <h4 class="form-title">管理密碼</h4>
+        <form id="passwordForm" style="max-width: 600px; margin: 0 auto;">
+            <div class="mb-3">
+                <h5>我的舊密碼</h5>
+                <div class="input-group">
+                    <input type="password" class="form-control" id="oldPassword" placeholder="請輸入舊密碼" required>
+                    <button type="button" class="btn btn-outline-secondary toggle-password" data-target="oldPassword">
+                        顯示密碼
+                    </button>
+                </div>
+            </div>
+            
+            
+            <div id="newPasswordFields" style="display: none;">
+                <div class="mb-3">
+                     <h5>我的新密碼</h5>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="newPassword" placeholder="請輸入新密碼" required>
+                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="newPassword">
+                            顯示密碼
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                     <h5>確認新密碼</h5>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="confirmPassword" placeholder="請再次輸入新密碼" required>
+                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="confirmPassword">
+                            顯示密碼
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary w-100" onclick="updatePassword()">確認更新</button>
+            </div>
+            <button type="button" class="btn btn-primary w-100" id="verifyOldPassword">下一步</button>
+        </form>
+    `;
+
+    document.getElementById("verifyOldPassword").addEventListener("click", verifyOldPassword);
+
+    // 添加事件監聽器來切換密碼顯示
+    document.querySelectorAll(".toggle-password").forEach(button => {
+        button.addEventListener("click", function () {
+            const targetId = this.getAttribute("data-target");
+            const passwordInput = document.getElementById(targetId);
+
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                this.textContent = "隱藏密碼";
+            } else {
+                passwordInput.type = "password";
+                this.textContent = "顯示密碼";
+            }
+        });
+    });
+}
+
+function verifyOldPassword() {
+    const oldPassword = document.getElementById("oldPassword").value.trim();
+
+    fetch("/memberCenter/password/verify", {
+        method: "PUT", // 確保使用的是 PUT 方法
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword: oldPassword }) // 確保傳遞 JSON 格式的數據
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("舊密碼錯誤");
+            }
+            return response.text();
+        })
+        .then(() => {
+            // 顯示新密碼輸入欄位
+            document.getElementById("newPasswordFields").style.display = "block";
+            document.getElementById("verifyOldPassword").style.display = "none";
+        })
+        .catch(error => {
+            alert(error.message);
+        });
+}
+
+function updatePassword() {
+    const newPassword = document.getElementById("newPassword").value.trim();
+    const confirmPassword = document.getElementById("confirmPassword").value.trim();
+
+    // 密碼規則驗證
+    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,20}$/;
+    if (!newPassword.match(passwordPattern)) {
+        alert("密碼必須包含至少一個大寫字母、一個小寫字母和一個數字，長度為8到20個字元");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert("新密碼兩次輸入不一致");
+        return;
+    }
+
+    // 發送請求
+    fetch("/memberCenter/password/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPassword })
+    })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(errorMessage => { throw new Error(errorMessage); });
+            }
+            return response.text();
+        })
+        .then(() => {
+            alert("密碼更新成功！");
+            loadPassword(); // 重置密碼變更畫面
+        })
+        .catch(error => {
+            alert(error.message);
+        });
+}
+       
+
+
+// 初始化付款方式管理內容
+function loadPaymentContent() {
+    contentArea.innerHTML = `
+        <div style="max-width: 700px; margin: 20px auto;">
+            <h4 class="form-title text-center mb-4">管理收/付款方式</h4>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="text-secondary">我的收/付款方式</h5>
+                <button class="btn btn-success btn-sm" id="addPaymentMethodButton">
+                    <i class="bi bi-plus-circle"></i> 新增收/付款方式
+                </button>
+            </div>
+
+            <!-- 信用卡區塊 -->
+            <div class="position-relative border rounded p-3 mb-4">
+                <h5 class="section-title">信用卡</h5>
+                <ul class="list-group mb-4" id="creditCardList">
+                    <!-- 動態載入信用卡項目 -->
+                </ul>
+            </div>
+
+            <!-- 銀行帳號區塊 -->
+            <div class="position-relative border rounded p-3">
+                <h5 class="section-title">銀行帳號</h5>
+                <ul class="list-group mb-4" id="bankAccountList">
+                    <!-- 動態載入銀行帳號項目 -->
+                </ul>
+            </div>
+
+            <p class="text-muted text-center">您可以新增多種收/付款方式，並選擇預設收/付款方式。</p>
+        </div>
+
+                <!-- 新增支付方式的彈出表單 -->
+        <div id="addPaymentForm" style="display: none; background: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 20px; border-radius: 8px; width: 400px;">
+                <h5 class="text-center mb-3">新增收/付款方式</h5>
+                <form id="paymentForm">
+                    <div class="mb-3">
+                        <label for="paymentCategory" class="form-label">付款類型</label>
+                        <select id="paymentCategory" class="form-select">
+                            <option value="1">信用卡</option>
+                            <option value="2">銀行帳戶</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentBank" class="form-label">金融機構名稱</label>
+                        <input type="text" id="paymentBank" class="form-control" placeholder="請輸入金融機構名稱">
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentAccount" class="form-label">帳號/卡號</label>
+                        <input type="text" id="paymentAccount" class="form-control" placeholder="請輸入帳號或卡號">
+                    </div>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-secondary me-2" id="cancelAddPayment">取消</button>
+                        <button type="submit" class="btn btn-success" id="submitPaymentButton">確認新增</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 更改支付方式的彈出表單 -->
+        <div id="editPaymentForm" style="display: none; background: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 20px; border-radius: 8px; width: 400px;">
+                <h5 class="text-center mb-3">更改收/付款方式</h5>
+                <form id="editPaymentFormElement">
+                    <div class="mb-3">
+                        <label for="editPaymentCategory" class="form-label">付款類型</label>
+                        <select id="editPaymentCategory" class="form-select">
+                            <option value="1">信用卡</option>
+                            <option value="2">銀行帳戶</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPaymentBank" class="form-label">金融機構名稱</label>
+                        <input type="text" id="editPaymentBank" class="form-control" placeholder="請輸入金融機構名稱">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPaymentAccount" class="form-label">帳號/卡號</label>
+                        <input type="text" id="editPaymentAccount" class="form-control" placeholder="請輸入帳號或卡號">
+                    </div>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-secondary me-2" id="cancelEditPayment">取消</button>
+                        <button type="submit" class="btn btn-success" id="submitEditPaymentButton">確認更改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    // 綁定按鈕事件
+    document.getElementById('addPaymentMethodButton').addEventListener('click', AddPayment);
+    document.getElementById('cancelAddPayment').addEventListener('click', () => {
+        document.getElementById('addPaymentForm').style.display = 'none';
+    });
+    document.getElementById('cancelEditPayment').addEventListener('click', () => {
+        document.getElementById('editPaymentForm').style.display = 'none';
+    });
+
+    loadPaymentMethods();
+}
+
+// 動態載入付款方式
+function loadPaymentMethods() {
+    fetch(`/memberCenter/payment/list`)
+        .then(response => response.json())
+        .then(data => {
+            const creditCardList = document.getElementById('creditCardList');
+            const bankAccountList = document.getElementById('bankAccountList');
+
+            creditCardList.innerHTML = '';
+            bankAccountList.innerHTML = '';
+
+            data.forEach(payment => {
+                if (payment.paymentStatus !== 1) return; // 跳過已停用
+
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                listItem.setAttribute('data-payment-id', payment.paymentId);
+                listItem.setAttribute('data-payment-category', payment.paymentCategory);
+                listItem.setAttribute('data-payment-bank', payment.paymentBank);
+                listItem.setAttribute('data-payment-account', payment.paymentAccount);
+
+                listItem.innerHTML = `
+                    <span>${payment.paymentBank} - ${payment.paymentAccount}</span>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm me-2" onclick="EditPayment(${payment.paymentId})">編輯</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="DeletePayment(${payment.paymentId})">刪除</button>
+                    </div>
+                `;
+
+                if (payment.paymentCategory === 1) {
+                    creditCardList.appendChild(listItem);
+                } else if (payment.paymentCategory === 2) {
+                    bankAccountList.appendChild(listItem);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading payment methods:', error);
+        });
+}
+
+// 自動完成功能樣式
+document.head.insertAdjacentHTML('beforeend', `
+    <style>
+        .autocomplete-option {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .autocomplete-option:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+`);
+
+
+// 預設銀行資料
+const bankList = [
+    { code: "001", name: "中央信託" },
+    { code: "002", name: "農民銀行" },
+    { code: "003", name: "交通銀行" },
+    { code: "004", name: "台灣銀行" },
+    { code: "005", name: "土地銀行" },
+    { code: "006", name: "合庫銀行" },
+    { code: "007", name: "第一銀行" },
+    { code: "008", name: "華南銀行" },
+    { code: "009", name: "彰化銀行" },
+    { code: "012", name: "台北富邦" },
+    { code: "013", name: "國泰世華" },
+    { code: "016", name: "高雄銀行" },
+    { code: "017", name: "中國商銀" },
+    { code: "021", name: "花旗銀行" },
+    { code: "050", name: "台灣企銀" },
+    { code: "051", name: "台北商銀" },
+    { code: "700", name: "中華郵政" },
+    { code: "808", name: "玉山銀行" },
+    { code: "812", name: "台新銀行" },
+    { code: "822", name: "中國信託" },
+    { code: "803", name: "聯邦銀行" },
+    { code: "805", name: "遠東銀行" },
+    { code: "816", name: "安泰銀行" },
+    { code: "814", name: "大眾銀行" },
+    { code: "807", name: "建華銀行" },
+    { code: "810", name: "寶華銀行" },
+    { code: "009", name: "彰化銀行" },
+    { code: "081", name: "匯豐銀行" },
+    { code: "083", name: "渣打銀行" },
+];
+
+// 自動完成功能樣式
+document.head.insertAdjacentHTML('beforeend', `
+    <style>
+        .autocomplete-option {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .autocomplete-option:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+`);
+
+
+
+
+// 新增付款方式
+function AddPayment() {
+    // 預設選項設為信用卡
+    document.getElementById('paymentCategory').value = '1'; // 假設 1 是信用卡的值
+    document.getElementById('paymentBank').value = '';
+    document.getElementById('paymentAccount').value = '';
+    document.getElementById('addPaymentForm').style.display = 'flex';
+
+    const paymentForm = document.getElementById('paymentForm');
+    const bankInput = document.getElementById('paymentBank');
+    let autocompleteList = document.getElementById('autocompleteList');
+
+    // 動態創建下拉選單容器（僅第一次執行時創建）
+    if (!autocompleteList) {
+        autocompleteList = document.createElement('div');
+        autocompleteList.id = 'autocompleteList';
+        autocompleteList.style.position = 'absolute';
+        autocompleteList.style.zIndex = '1000';
+        autocompleteList.style.background = 'white';
+        autocompleteList.style.border = '1px solid #ccc';
+        autocompleteList.style.width = `${bankInput.offsetWidth}px`; // 對齊輸入框寬度
+        autocompleteList.style.maxHeight = '200px';
+        autocompleteList.style.overflowY = 'auto';
+        autocompleteList.style.display = 'none'; // 預設隱藏
+        bankInput.insertAdjacentElement('afterend', autocompleteList);
+    }
+
+    // 清除之前的事件綁定
+    paymentForm.onsubmit = null;
+
+    // 綁定提交事件，並加入重複檢查
+    paymentForm.onsubmit = function (e) {
+        e.preventDefault();
+
+        const paymentData = {
+            paymentCategory: document.getElementById('paymentCategory').value,
+            paymentBank: bankInput.value,
+            paymentAccount: document.getElementById('paymentAccount').value,
+        };
+
+        // 檢查是否有重複的付款方式
+        if (isDuplicatePayment(paymentData)) {
+            alert('該收/付款方式已存在，請勿重複新增！');
+            return;
+        }
+
+        // 發送新增請求
+        fetch('/memberCenter/payment/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(paymentData),
+        })
+            .then(response => response.json())
+            .then(() => {
+                alert('新增成功');
+                document.getElementById('addPaymentForm').style.display = 'none';
+                loadPaymentMethods();
+            })
+            .catch(error => {
+                console.error('Error adding payment method:', error);
+                alert('新增失敗，請稍後再試');
+            });
+    };
+
+    // 綁定輸入事件，實現自動完成功能
+    bankInput.addEventListener('input', function () {
+        const value = bankInput.value.trim().toLowerCase();
+        autocompleteList.innerHTML = ''; // 清空下拉選單
+
+        if (value.length > 0) {
+            const filteredBanks = bankList.filter(bank =>
+                bank.name.toLowerCase().includes(value) || bank.code.startsWith(value)
+            );
+
+            if (filteredBanks.length > 0) {
+                filteredBanks.forEach(bank => {
+                    const option = document.createElement('div');
+                    option.className = 'autocomplete-option';
+                    option.textContent = `${bank.code} - ${bank.name}`;
+                    option.style.padding = '8px';
+                    option.style.cursor = 'pointer';
+                    option.addEventListener('click', () => {
+                        bankInput.value = `${bank.code} - ${bank.name}`;
+                        autocompleteList.style.display = 'none'; // 點選後隱藏選項
+                    });
+                    autocompleteList.appendChild(option);
+                });
+                autocompleteList.style.display = 'block'; // 顯示選項
+            } else {
+                autocompleteList.style.display = 'none'; // 無匹配選項時隱藏
+            }
+        } else {
+            autocompleteList.style.display = 'none'; // 清空時隱藏選項
+        }
+    });
+
+    // 點擊外部隱藏選單
+    document.addEventListener('click', (e) => {
+        if (e.target !== bankInput && e.target !== autocompleteList) {
+            autocompleteList.style.display = 'none';
+        }
+    });
+}
+
+// 檢查付款方式是否重複
+function isDuplicatePayment(paymentData) {
+    const allPayments = [...document.querySelectorAll('[data-payment-id]')];
+    return allPayments.some(item => {
+        const paymentCategory = item.getAttribute('data-payment-category');
+        const paymentBank = item.getAttribute('data-payment-bank');
+        const paymentAccount = item.getAttribute('data-payment-account');
+
+        return (
+            paymentCategory === paymentData.paymentCategory && // 類型相同
+            paymentBank === paymentData.paymentBank && // 銀行名稱相同
+            paymentAccount === paymentData.paymentAccount // 帳號相同
+        );
+    });
+}
+
+
+
+// 
+function EditPayment(paymentId) {
+    fetch(`/memberCenter/payment/${paymentId}`)
+        .then(response => response.json())
+        .then(data => {
+            const bankInput = document.getElementById('editPaymentBank');
+            let autocompleteList = document.getElementById('editAutocompleteList');
+
+            // 確保下拉選單容器存在
+            if (!autocompleteList) {
+                autocompleteList = document.createElement('div');
+                autocompleteList.id = 'editAutocompleteList';
+                autocompleteList.style.position = 'absolute';
+                autocompleteList.style.zIndex = '1000';
+                autocompleteList.style.background = 'white';
+                autocompleteList.style.border = '1px solid #ccc';
+                autocompleteList.style.maxHeight = '200px';
+                autocompleteList.style.overflowY = 'auto';
+                autocompleteList.style.display = 'none'; // 預設隱藏
+                document.body.appendChild(autocompleteList); // 加入至 body，以便動態定位
+            }
+
+            // 填充表單資料
+            document.getElementById('editPaymentCategory').value = data.paymentCategory;
+            document.getElementById('editPaymentBank').value = data.paymentBank;
+            document.getElementById('editPaymentAccount').value = data.paymentAccount;
+            document.getElementById('editPaymentForm').style.display = 'flex';
+
+            // 動態計算下拉選單的位置
+            function updateAutocompleteListPosition() {
+                const inputRect = bankInput.getBoundingClientRect();
+                autocompleteList.style.width = `${inputRect.width}px`;
+                autocompleteList.style.top = `${inputRect.bottom + window.scrollY}px`;
+                autocompleteList.style.left = `${inputRect.left + window.scrollX}px`;
+            }
+            updateAutocompleteListPosition();
+
+            // 綁定輸入事件
+            function handleInput() {
+                const value = bankInput.value.trim().toLowerCase();
+                autocompleteList.innerHTML = ''; // 清空下拉選單
+
+                if (value.length > 0) {
+                    const filteredBanks = bankList.filter(bank =>
+                        bank.name.toLowerCase().includes(value) || bank.code.startsWith(value)
+                    );
+
+                    if (filteredBanks.length > 0) {
+                        filteredBanks.forEach(bank => {
+                            const option = document.createElement('div');
+                            option.className = 'autocomplete-option';
+                            option.textContent = `${bank.code} - ${bank.name}`;
+                            option.style.padding = '8px';
+                            option.style.cursor = 'pointer';
+                            option.addEventListener('click', () => {
+                                bankInput.value = `${bank.code} - ${bank.name}`;
+                                autocompleteList.style.display = 'none'; // 點選後隱藏選項
+                            });
+                            autocompleteList.appendChild(option);
+                        });
+                        autocompleteList.style.display = 'block'; // 顯示選項
+                    } else {
+                        autocompleteList.style.display = 'none'; // 無匹配選項時隱藏
+                    }
+                } else {
+                    autocompleteList.style.display = 'none'; // 清空時隱藏選項
+                }
+            }
+
+            // 避免重複綁定事件
+            bankInput.removeEventListener('input', handleInput);
+            bankInput.addEventListener('input', handleInput);
+
+            // 點擊外部隱藏選單
+            function handleClickOutside(e) {
+                if (e.target !== bankInput && !autocompleteList.contains(e.target)) {
+                    autocompleteList.style.display = 'none';
+                }
+            }
+            document.addEventListener('click', handleClickOutside);
+
+            // 提交編輯表單
+            const paymentForm = document.getElementById('editPaymentFormElement');
+            paymentForm.onsubmit = function (e) {
+                e.preventDefault();
+
+                const updatedPaymentData = {
+                    paymentCategory: parseInt(document.getElementById('editPaymentCategory').value, 10),
+                    paymentBank: bankInput.value,
+                    paymentAccount: document.getElementById('editPaymentAccount').value,
+                };
+
+                // 檢查是否與現有的付款方式重複
+                if (isDuplicatePayment(updatedPaymentData, paymentId)) {
+                    alert('該收/付款方式已存在，請勿重複更新！');
+                    return;
+                }
+
+                // 發送更新請求
+                fetch(`/memberCenter/payment/update/${paymentId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedPaymentData),
+                })
+                    .then(response => response.json())
+                    .then(() => {
+                        alert('更新成功');
+                        document.getElementById('editPaymentForm').style.display = 'none';
+                        loadPaymentMethods();
+                    })
+                    .catch(error => {
+                        console.error('Error updating payment method:', error);
+                        alert('更新失敗，請稍後再試');
+                    });
+            };
+        })
+        .catch(error => {
+            console.error('Error fetching payment data:', error);
+            alert('無法取得收/付款方式資料，請稍後再試');
+        });
+}
+
+// 檢查付款方式是否重複（包含編輯時的排除）
+function isDuplicatePayment(paymentData, currentPaymentId) {
+    const allPayments = [...document.querySelectorAll('[data-payment-id]')];
+    return allPayments.some(item => {
+        const paymentId = item.getAttribute('data-payment-id');
+        const paymentCategory = item.getAttribute('data-payment-category');
+        const paymentBank = item.getAttribute('data-payment-bank');
+        const paymentAccount = item.getAttribute('data-payment-account');
+
+        return (
+            paymentId !== String(currentPaymentId) && // 排除正在編輯的付款方式
+            paymentCategory === String(paymentData.paymentCategory) && // 類型相同
+            paymentBank === paymentData.paymentBank && // 銀行名稱相同
+            paymentAccount === paymentData.paymentAccount // 帳號相同
+        );
+    });
+}
+
+
+
+// 刪除付款方式
+function DeletePayment(paymentId) {
+    if (!confirm('確定要刪除此收/付款方式嗎？')) return;
+
+    fetch(`/memberCenter/payment/delete/${paymentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+    })
+        .then(() => {
+            alert('收/付款方式已刪除');
+            loadPaymentMethods();
+        })
+        .catch(error => {
+            console.error('Error deleting payment method:', error);
+            alert('刪除失敗，請稍後再試');
+        });
+}
+
+
+
+
+
+// 初始化地址管理內容
+function loadAddressContent() {
+    contentArea.innerHTML = `
+        <div style="max-width: 700px; margin: 20px auto;">
+            <h4 class="form-title text-center mb-4">管理地址</h4>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="text-secondary">我的地址</h5>
+                <button class="btn btn-success btn-sm" id="addAddressButton">
+                    <i class="bi bi-plus-circle"></i> 新增地址
+                </button>
+            </div>
+
+            <!-- 地址類型分區 -->
+            <div class="position-relative border rounded p-3 mb-4">
+                <h5 class="section-title">住家</h5>
+                <ul class="list-group mb-4" id="homeAddressList">
+                    <!-- 動態載入住家地址 -->
+                </ul>
+            </div>
+
+            <div class="position-relative border rounded p-3 mb-4">
+                <h5 class="section-title">7-11</h5>
+                <ul class="list-group mb-4" id="sevenElevenAddressList">
+                    <!-- 動態載入 7-11 地址 -->
+                </ul>
+            </div>
+
+            <div class="position-relative border rounded p-3 mb-4">
+                <h5 class="section-title">全家</h5>
+                <ul class="list-group mb-4" id="familyMartAddressList">
+                    <!-- 動態載入全家地址 -->
+                </ul>
+            </div>
+
+            <div class="position-relative border rounded p-3 mb-4">
+                <h5 class="section-title">面交</h5>
+                <ul class="list-group mb-4" id="meetupAddressList">
+                    <!-- 動態載入面交地址 -->
+                </ul>
+            </div>
+
+            <p class="text-muted text-center">您可以新增多個地址，並選擇預設地址。</p>
+        </div>
+
+        <!-- 新增地址的彈出表單 -->
+        <div id="addAddressForm" style="display: none; background: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 20px; border-radius: 8px; width: 400px;">
+                <h5 class="text-center mb-3">新增地址</h5>
+                <form id="newAddressForm">
+                    <div class="mb-3">
+                        <label for="newAddressCategory" class="form-label">地址類型</label>
+                        <select id="newAddressCategory" class="form-select">
+                            <option value="1">住家</option>
+                            <option value="2">7-11</option>
+                            <option value="3">全家</option>
+                            <option value="4">面交</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newAddressee" class="form-label">收件人</label>
+                        <input type="text" id="newAddressee" class="form-control" placeholder="請輸入收件人姓名">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newUserTel" class="form-label">連絡電話</label>
+                        <input type="text" id="newUserTel" class="form-control" placeholder="請輸入連絡電話">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newStoreName" class="form-label">超商/地址名稱</label>
+                        <input type="text" id="newStoreName" class="form-control" placeholder="請輸入地址名稱">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newStoreId" class="form-label">店號/郵遞區號</label>
+                        <input type="text" id="newStoreId" class="form-control" placeholder="請輸入店號或郵遞區號">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newStoreAddress" class="form-label">詳細地址</label>
+                        <input type="text" id="newStoreAddress" class="form-control" placeholder="請輸入詳細地址">
+                    </div>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-secondary me-2" id="cancelNewAddress">取消</button>
+                        <button type="submit" class="btn btn-success">確認新增</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        
+
+        <!-- 編輯地址的彈出表單 -->
+        <div id="editAddressForm" style="display: none; background: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 20px; border-radius: 8px; width: 400px;">
+                <h5 class="text-center mb-3">編輯地址</h5>
+                <form id="editAddressFormElement">
+                    <div class="mb-3">
+                        <label for="editAddressCategory" class="form-label">地址類型</label>
+                        
+                        <select id="editAddressCategory" class="form-select">
+                            <option value="1">住家</option>
+                            <option value="2">7-11</option>
+                            <option value="3">全家</option>
+                            <option value="4">面交</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAddressee" class="form-label">收件人</label>
+                        <input type="text" id="editAddressee" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editUserTel" class="form-label">連絡電話</label>
+                        <input type="text" id="editUserTel" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStoreName" class="form-label">地址名稱</label>
+                        <input type="text" id="editStoreName" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStoreId" class="form-label">店號/郵遞區號</label>
+                        <input type="text" id="editStoreId" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStoreAddress" class="form-label">詳細地址</label>
+                        <input type="text" id="editStoreAddress" class="form-control">
+                    </div>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-secondary me-2" id="cancelEditAddress">取消</button>
+                        <button type="submit" class="btn btn-success">確認更改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('addAddressButton').addEventListener('click', () => {
+        document.getElementById('addAddressForm').style.display = 'flex';
+    });
+
+    document.getElementById('cancelNewAddress').addEventListener('click', () => {
+        document.getElementById('addAddressForm').style.display = 'none';
+    });
+
+    document.getElementById('cancelEditAddress').addEventListener('click', () => {
+        document.getElementById('editAddressForm').style.display = 'none';
+    });
+
+    loadAddressList();
+    initializeAddAddressForm();
+}
+
+// 動態載入地址列表
+function loadAddressList() {
+    const homeAddressList = document.getElementById('homeAddressList');
+    const sevenElevenAddressList = document.getElementById('sevenElevenAddressList');
+    const familyMartAddressList = document.getElementById('familyMartAddressList');
+    const meetupAddressList = document.getElementById('meetupAddressList');
+
+    if (!homeAddressList || !sevenElevenAddressList || !familyMartAddressList || !meetupAddressList) {
+        console.error('Missing address list elements in the DOM');
+        return;
+    }
+
+    fetch('/memberCenter/address/list')
+        .then(response => response.json())
+        .then(data => {
+            const addresses = data.addresses || [];
+
+            // 清空列表
+            homeAddressList.innerHTML = '';
+            sevenElevenAddressList.innerHTML = '';
+            familyMartAddressList.innerHTML = '';
+            meetupAddressList.innerHTML = '';
+
+            addresses.forEach(address => {
+                if (address.addressStatus !== 1) return;
+
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                listItem.setAttribute('data-address-id', address.addressId);
+
+                listItem.innerHTML = `
+                    <div>
+                        <p><strong>${address.addressee}</strong> (${address.userTel})</p>
+                         <p>${address.storeId}</p>
+                        <p>${address.storeName} - ${address.storeAddress}</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm me-2" onclick="editAddress(${address.addressId})">編輯</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteAddress(${address.addressId})">刪除</button>
+                    </div>
+                `;
+
+                switch (address.addressCategory) {
+                    case 1:
+                        homeAddressList.appendChild(listItem);
+                        break;
+                    case 2:
+                        sevenElevenAddressList.appendChild(listItem);
+                        break;
+                    case 3:
+                        familyMartAddressList.appendChild(listItem);
+                        break;
+                    case 4:
+                        meetupAddressList.appendChild(listItem);
+                        break;
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading address list:', error);
+        });
+}
+
+// 初始化新增地址的表單
+function initializeAddAddressForm() {
+    const form = document.getElementById('newAddressForm');
+    form.addEventListener('submit', handleAddressSubmit);
+
+    // 點擊取消時清空表單並隱藏表單
+    document.getElementById('cancelNewAddress').addEventListener('click', () => {
+        form.reset(); // 清空表單
+        document.getElementById('addAddressForm').style.display = 'none';
+    });
+}
+
+// 點擊新增地址按鈕時
+document.getElementById('addAddressButton').addEventListener('click', () => {
+    const form = document.getElementById('newAddressForm');
+    form.reset(); // 清空表單
+    document.getElementById('addAddressForm').style.display = 'flex';
+});
+
+// 處理新增地址提交
+function handleAddressSubmit(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const newAddress = {
+        addressCategory: parseInt(document.getElementById('newAddressCategory').value, 10),
+        addressee: document.getElementById('newAddressee').value.trim(),
+        userTel: document.getElementById('newUserTel').value.trim(),
+        storeName: document.getElementById('newStoreName').value.trim(),
+        storeId: parseInt(document.getElementById('newStoreId').value, 10),
+        storeAddress: document.getElementById('newStoreAddress').value.trim(),
+    };
+
+    if (!validateFormData(newAddress)) return;
+
+    fetch('/memberCenter/address/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAddress),
+    })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(error => {
+                    throw new Error(error.message || '新增失敗');
+                });
+            }
+            return response.json();
+        })
+        .then(() => {
+            alert('新增成功');
+            form.reset(); // 清空表單
+            document.getElementById('addAddressForm').style.display = 'none';
+            loadAddressList(); // 更新地址列表
+        })
+        .catch(error => {
+            console.error('Error adding address:', error);
+            alert(error.message || '新增失敗，請稍後再試');
+        });
+}
+
+// 驗證表單數據
+function validateFormData(data) {
+    if (!data.addressee) {
+        alert('收件人名稱不可為空');
+        return false;
+    }
+    if (!/^\d{10}$/.test(data.userTel)) {
+        alert('電話號碼格式不正確，請輸入 10 位數字');
+        return false;
+    }
+    if (!data.storeName || !data.storeAddress) {
+        alert('地址名稱或詳細地址不可為空');
+        return false;
+    }
+    return true;
+}
+
+// 初始化頁面
+document.addEventListener('DOMContentLoaded', loadAddressContent);
+
+
+
+
+// 編輯地址
+function editAddress(addressId) {
+    fetch(`/memberCenter/address/${addressId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('無法取得地址資料');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const editCategory = document.getElementById('editAddressCategory');
+            const editAddressee = document.getElementById('editAddressee');
+            const editUserTel = document.getElementById('editUserTel');
+            const editStoreName = document.getElementById('editStoreName');
+            const editStoreId = document.getElementById('editStoreId');
+            const editStoreAddress = document.getElementById('editStoreAddress');
+            const editForm = document.getElementById('editAddressForm');
+
+            if (!editCategory || !editAddressee || !editUserTel || !editStoreName || !editStoreId || !editStoreAddress || !editForm) {
+                console.error('Missing form elements');
+                alert('表單元素未正確載入，請檢查代碼');
+                return;
+            }
+
+            // 填充表單數據
+            editCategory.value = data.addressCategory || '';
+            editAddressee.value = data.addressee || '';
+            editUserTel.value = data.userTel || '';
+            editStoreName.value = data.storeName || '';
+            editStoreId.value = data.storeId || '';
+            editStoreAddress.value = data.storeAddress || '';
+
+            // 顯示編輯表單
+            editForm.style.display = 'flex';
+
+            // 綁定提交事件
+            document.getElementById('editAddressFormElement').onsubmit = function (e) {
+                e.preventDefault();
+
+                const updatedAddress = {
+                    addressCategory: parseInt(editCategory.value, 10),
+                    addressee: editAddressee.value.trim(),
+                    userTel: editUserTel.value.trim(),
+                    storeName: editStoreName.value.trim(),
+                    storeId: parseInt(editStoreId.value, 10),
+                    storeAddress: editStoreAddress.value.trim(),
+                };
+
+                // 驗證輸入數據
+                if (!updatedAddress.addressee) {
+                    alert('收件人名稱不可為空');
+                    return;
+                }
+                if (!/^\d{10}$/.test(updatedAddress.userTel)) {
+                    alert('電話號碼格式不正確，請輸入 10 位數字');
+                    return;
+                }
+                if (isNaN(updatedAddress.addressCategory) || updatedAddress.addressCategory < 1 || updatedAddress.addressCategory > 4) {
+                    alert('地址類別無效');
+                    return;
+                }
+
+                fetch(`/memberCenter/address/update/${addressId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedAddress),
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('更新失敗');
+                        }
+                        return response.json();
+                    })
+                    .then(() => {
+                        alert('地址更新成功');
+                        editForm.style.display = 'none';
+                        loadAddressList();
+                    })
+                    .catch(error => {
+                        console.error('Error updating address:', error);
+                        alert('更新失敗，請稍後再試');
+                    });
+            };
+        })
+        .catch(error => {
+            console.error('Error fetching address:', error);
+            alert('無法取得地址資料，請稍後再試');
+        });
+}
+
+// 刪除地址
+function deleteAddress(addressId) {
+    if (!confirm('確定要刪除此地址嗎？')) return;
+
+    fetch(`/memberCenter/address/delete/${addressId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+    })
+        .then(() => {
+            alert('地址已刪除');
+            loadAddressList();
+        })
+        .catch(error => {
+            console.error('Error deleting address:', error);
+            alert('刪除失敗，請稍後再試');
+        });
+}
+
+
+       document.addEventListener('click', function (event) {
+           if (event.target && event.target.id === 'togglePassword') {
+               const passwordInput = document.getElementById('password');
+               const toggleButton = event.target;
+               if (passwordInput.type === 'password') {
+                   passwordInput.type = 'text';
+                   toggleButton.textContent = '隱藏密碼';
+               } else {
+                   passwordInput.type = 'password';
+                   toggleButton.textContent = '顯示密碼';
+               }
+           }
+       });
+   </script>
+</body>
+</html>

@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/" lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商品收購文章首頁</title>
+<!-- 引入 Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+
+<style>
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.pagination .page-item:not(.active) .page-link {
+    color: #007bff;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+
+/* 添加卡片固定大小樣式 */
+.fixed-card {
+    width: 350px; /* 固定卡片寬度 */
+    margin: 15px;
+}
+
+.card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+    padding: 0 15px;
+}
+
+.fixed-card {
+    width: 100%;
+    margin: 0;
+}
+
+.fixed-card .card-img-container {
+    width: 100%;
+    aspect-ratio: 4/3;  /* 確保 4:3 的比例 */
+    overflow: hidden;
+}
+#clear-button, #search-button {
+    transform: none;          /* 防止文字被旋轉 */
+    white-space: nowrap;      /* 防止文字換行 */
+    writing-mode: initial;    /* 重設文字方向 */
+}
+</style>
+</head>
+<body class="bg-light">
+	<div th:replace="~{layout/userHeader}"></div>
+	<br/>
+	<br/>
+	<div class="container py-5">
+		<!-- 標題 -->
+		<h1 class="h4 fw-bold text-center mb-4">商品收購文章</h1>
+
+		<!-- 搜尋欄與新增文章按鈕 -->
+		<div class="d-flex justify-content-between align-items-center mb-4">
+			<div
+				class="d-flex flex-grow-1 align-items-center justify-content-center">
+				<div class="input-group">
+					<select class="form-select" id="category-filter"
+						style="max-width: 150px;">
+						<option value="">所有分類</option>
+						<option value="模型/公仔">模型/公仔</option>
+						<option value="動漫周邊">動漫周邊</option>
+						<option value="玩偶">玩偶</option>
+						<option value="漫畫/輕小說">漫畫/輕小說</option>
+						<option value="原聲帶/專輯">原聲帶/專輯</option>
+						<option value="文具/辦公用品">文具/辦公用品</option>
+						<option value="其他">其他</option>
+					</select>
+					<input type="text" id="search-bar" class="form-control"
+						placeholder="搜尋文章..." style="max-width: 300px;">
+					<div class="d-flex align-items-center">
+						<span class="mx-2">起始日期:</span>
+						<input type="date" id="start-date-filter" class="form-control" style="max-width: 150px;">
+						<span class="mx-2">結束日期:</span>
+						<input type="date" id="end-date-filter" class="form-control" style="max-width: 150px;">
+					</div>
+					<!-- 新增清除按鈕 -->
+					<button class="btn btn-secondary" id="clear-button">清除</button>
+					<!-- 搜尋按鈕 -->
+					<button class="btn btn-primary" id="search-button">搜尋</button>
+				</div>
+			</div>
+			<button class="btn btn-warning ms-3" id="addArticleBtn">+新增文章</button>
+		</div>
+
+		<!-- 卡片容器 -->
+		<div class="card-container" id="card-container">
+			<!-- 動態生成卡片 -->
+		</div>
+
+		<!-- 分頁按鈕 -->
+		<nav aria-label="Page navigation" class="mt-4">
+			<ul class="pagination justify-content-center">
+				<li class="page-item"><button class="page-link" id="prev-page">上一頁</button></li>
+				<li class="page-item"><button class="page-link" id="next-page">下一頁</button></li>
+			</ul>
+		</nav>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal fade" id="addArticleModal" tabindex="-1"
+		aria-labelledby="addArticleModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">新增文章</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" 	aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<form id="add-article-form">
+						<div class="mb-3">
+							<label for="article-title" class="form-label">文章標題</label> <input
+								type="text" class="form-control" id="article-title" placeholder="請輸入30字以內的標題" required>
+						</div>
+						<div class="mb-3">
+							<label for="article-category" class="form-label">分類</label> <select
+								class="form-select" id="article-category" required>
+								<option value="模型/公仔">模型/公仔</option>
+								<option value="動漫周邊">動漫周邊</option>
+								<option value="玩偶">玩偶</option>
+								<option value="漫畫/輕小說">漫畫/輕小說</option>
+								<option value="原聲帶/專輯">原聲帶/專輯</option>
+								<option value="文具/辦公用品">文具/辦公用品</option>
+								<option value="其他">其他</option>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label for="article-condition" class="form-label">商品狀態</label>
+							<select class="form-select" id="article-condition" required>
+								<option value="">請選擇</option>
+								<option value="全新">全新</option>
+								<option value="二手">二手</option>
+								<option value="二手">不限</option>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label for="article-price" class="form-label">收購價格</label>
+							<input type="number" class="form-control" id="article-price" placeholder="請輸入收購價格" required>
+						</div>
+						<div class="mb-3">
+							<label for="article-content" class="form-label">描述內容</label>
+							<textarea class="form-control" id="article-content" rows="4" placeholder="請輸入300字以內的文字"style="resize:none"
+								required></textarea>
+						</div>
+						<div class="mb-3">
+							<label for="article-image" class="form-label">上傳圖片（最多5張）</label>
+							<input class="form-control" type="file" id="article-image" accept="image/*" multiple>
+							<small class="text-muted">已選擇 <span id="image-count">0</span>/5 張圖片</small>
+							<div id="image-preview" class="mt-3 d-flex flex-wrap gap-2"></div>
+						</div>
+						<!-- 新增裁切 Modal -->
+						<div class="modal fade" id="cropperModal" tabindex="-1">
+							<div class="modal-dialog modal-lg">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title">裁切圖片</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+									</div>
+									<div class="modal-body">
+										<div style="max-height: 500px;">
+											<img id="cropperImage" src="" style="display: block; max-width: 100%;">
+										</div>
+									</div>
+									<div class="modal-footer">
+										<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+										<button type="button" class="btn btn-primary" id="cropButton">確認裁切</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary"
+						data-bs-dismiss="modal">取消</button>
+					<button type="button" class="btn btn-primary"
+						id="save-article-button">提交</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+
+	<script>
+	function viewArticleDetails(articleId) {
+	    window.location.href = `/forum/article/${articleId}`;
+	}
+	document.addEventListener('DOMContentLoaded', function() {
+	    const cardContainer = document.getElementById('card-container');
+	    const searchBar = document.getElementById('search-bar');
+	    const categoryFilter = document.getElementById('category-filter');
+		const imageInput = document.getElementById('article-image');
+    	const imagePreview = document.getElementById('image-preview');
+    	const imageCount = document.getElementById('image-count');
+		const cropperModal = new bootstrap.Modal(document.getElementById('cropperModal'));
+
+	
+		let cropper = null;
+	    let currentPage = 1;
+		let currentImageIndex = 0;
+		let processedImages = [];
+
+	
+	    // API 請求函數
+	    async function fetchArticles(page) {
+			try {
+				const category = document.getElementById('category-filter').value;
+				const searchText = document.getElementById('search-bar').value.trim();
+				const startDate = document.getElementById('start-date-filter').value;
+				const endDate = document.getElementById('end-date-filter').value;
+
+				
+				// 構建 URL with query parameters
+				let url = `/forum/forumArticles?page=${page-1}`;
+				if (category) {
+					url += `&category=${encodeURIComponent(category)}`;
+				}
+				if (searchText) {
+					url += `&search=${encodeURIComponent(searchText)}`;
+				}
+				if (startDate) {
+            		url += `&startDate=${encodeURIComponent(startDate)}`;
+        		}
+        		if (endDate) {
+					url += `&endDate=${encodeURIComponent(endDate)}`;
+        		}
+
+				const response = await fetch(url);
+				const data = await response.json();
+				return data;
+			} catch (error) {
+				console.error('Error fetching articles:', error);
+			}
+	    }
+	
+	    // 生成卡片函數
+        function generateCards(pageData) {
+            cardContainer.innerHTML = '';
+            
+            pageData.content.forEach(article => {
+                const card = document.createElement('div');
+				card.className = 'fixed-card'; // 使用固定大小的卡片類
+
+        	// 檢查文章的圖片資訊
+        	console.log('Article data:', {
+				id: article.forumArticleId,
+				photoCount: article.forumArticlePhotos ? article.forumArticlePhotos.length : 0,
+				photos: article.forumArticlePhotos
+        	});
+
+			// 使用文章，根據圖片數量生成不同的 HTML 結構
+			let imageHtml = '';
+
+			if (!article.forumArticlePhotos || article.forumArticlePhotos.length === 0) {
+				// 如果沒有圖片，使用預設圖片
+				imageHtml = `
+					<div class="card-img-container">
+						<img src="/static/images/defaultPhoto.jpg"
+							alt="Default Image" 
+							class="d-block w-100 h-100"
+							style="object-fit: cover; object-position: center;">
+					</div>`;
+			} else if (article.forumArticlePhotos.length === 1) {
+				// 單張圖片的情況
+				imageHtml = `
+					<div class="card-img-container">
+						<img src="/forum/images/${article.forumArticleId}/0" 
+							alt="Article Image" 
+							class="d-block w-100 h-100"
+							style="object-fit: cover; object-position: center;"
+							onerror="this.src='/static/images/defualPhoto.jpg'">
+					</div>`;
+			} else {
+				// 多張圖片的情況
+				imageHtml = `
+					<div class="card-img-container">
+						<div id="carousel-${article.forumArticleId}" class="carousel slide h-100" data-bs-ride="carousel">
+							<div class="carousel-inner h-100">
+								${article.forumArticlePhotos.map((photo, index) => `
+									<div class="carousel-item h-100 ${index === 0 ? 'active' : ''}">
+										<img src="/forum/images/${article.forumArticleId}/${index}" 
+											alt="Article Image" 
+											class="d-block w-100 h-100"
+											style="object-fit: cover; object-position: center;"
+											onerror="this.src='/static/images/defualPhoto.jpg'">
+									</div>
+								`).join('')}
+							</div>
+							<button class="carousel-control-prev" type="button" data-bs-target="#carousel-${article.forumArticleId}" data-bs-slide="prev">
+								<span class="carousel-control-prev-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">Previous</span>
+							</button>
+							<button class="carousel-control-next" type="button" data-bs-target="#carousel-${article.forumArticleId}" data-bs-slide="next">
+								<span class="carousel-control-next-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">Next</span>
+							</button>
+						</div>
+					</div>`;
+			}
+
+			card.innerHTML = `
+			<div class="card h-100 shadow-sm">
+				${imageHtml}
+				<div class="card-body">
+					<h5 class="card-title text-truncate">${article.forumArticleTitle}</h5>
+					<h6 class="card-subtitle mb-2 text-muted">
+						<span class="badge bg-dark">${article.forumArticleItemType}</span>
+						<span class="badge bg-warning">${article.forumArticleItemCondition}</span>
+					</h6>
+					<p class="card-text">收購價格: $${article.forumArticlePrice}</p>
+<p class="card-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
+    ${article.forumArticleContent}
+</p>
+					<div class="d-flex justify-content-between align-items-center mt-3">
+						<small class="text-muted">
+							<i class="bi bi-clock"></i> 
+							${new Date(article.forumArticleCreatedDate).toLocaleDateString()}
+						</small>
+						<button class="btn btn-light btn" onclick="viewArticleDetails(${article.forumArticleId})">查看詳情</button>
+					</div>
+				</div>
+			</div>
+			`;
+
+			cardContainer.appendChild(card);
+
+			// 只在有多張圖片時初始化輪播，並設定較慢的輪播速度
+			if (article.forumArticlePhotos && article.forumArticlePhotos.length > 1) {
+				const carousel = new bootstrap.Carousel(document.getElementById(`carousel-${article.forumArticleId}`), {
+					interval: 1500, // 設定輪播間隔為 X 秒 (預設是 3 秒)
+				});
+			}
+			});
+		}
+	
+		// 創建分頁按鈕元素
+		function createPageItem(text, enabled, isActive = false) {
+	        const li = document.createElement('li');
+	        li.className = `page-item ${!enabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`;
+	        
+	        const button = document.createElement('button');
+	        button.className = 'page-link';
+	        button.textContent = text;
+	        button.disabled = !enabled;
+	        
+	        li.appendChild(button);
+	        return li;
+	    }
+
+		// 修改分頁按鈕的事件處理
+		function updatePagination(pageData) {
+			const paginationContainer = document.querySelector('.pagination');
+			const totalPages = pageData.totalPages;
+			currentPage = pageData.number + 1;
+
+			// 清空現有的分頁按鈕
+			paginationContainer.innerHTML = '';
+
+			// 添加"上一頁"按鈕
+			const prevButton = createPageItem('上一頁', currentPage > 1);
+			prevButton.addEventListener('click', () => {
+				if (currentPage > 1) {
+					loadArticles(currentPage - 1);
+				}
+			});
+			paginationContainer.appendChild(prevButton);
+
+			// 計算要顯示的頁碼範圍
+			let startPage = Math.max(1, currentPage - 2);
+			let endPage = Math.min(totalPages, startPage + 4);
+			
+			if (endPage - startPage < 4 && startPage > 1) {
+				startPage = Math.max(1, endPage - 4);
+			}
+
+			// 添加頁碼按鈕
+			for (let i = startPage; i <= endPage; i++) {
+				const pageItem = createPageItem(i, true, i === currentPage);
+				pageItem.addEventListener('click', () => {
+					currentPage = i;
+					loadArticles(currentPage);
+				});
+				paginationContainer.appendChild(pageItem);
+			}
+
+			// 添加"下一頁"按鈕
+			const nextButton = createPageItem('下一頁', currentPage < totalPages);
+			nextButton.addEventListener('click', () => {
+				if (currentPage < totalPages) {
+					loadArticles(currentPage + 1);
+				}
+			});
+			paginationContainer.appendChild(nextButton);
+
+			// 如果沒有資料，顯示提示訊息
+			if (totalPages === 0) {
+				const noDataMessage = document.createElement('div');
+				noDataMessage.className = 'text-center mt-4';
+				noDataMessage.textContent = '沒有找到相關文章';
+				cardContainer.innerHTML = '';
+				cardContainer.appendChild(noDataMessage);
+			}
+		}
+		
+	    // 加載文章函數
+	    async function loadArticles(page) {
+	        const pageData = await fetchArticles(page);
+	        if (pageData) {
+	            generateCards(pageData);
+	            updatePagination(pageData);
+	        }
+	    }
+
+		// 圖片上傳處理
+		imageInput.addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        
+        // 檢查圖片數量
+        if (files.length + processedImages.length > 5) {
+            alert('最多只能上傳5張圖片');
+            imageInput.value = '';
+            return;
+        }
+
+        // 處理每個圖片
+        files.forEach((file, index) => {
+            if (processedImages.length >= 5) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentImageIndex = processedImages.length;
+                showCropper(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        updateImageCount();
+    });
+
+    // 顯示裁切器
+    function showCropper(src) {
+        const cropperImage = document.getElementById('cropperImage');
+        cropperImage.src = src;
+        
+        if (cropper) {
+            cropper.destroy();
+        }
+
+        cropperModal.show();
+        
+		cropper = new Cropper(cropperImage, {
+			aspectRatio: 4/3, // 改為 4:3 的比例，較適合卡片展示
+			viewMode: 2,
+			dragMode: 'move',
+			autoCropArea: 1,
+			restore: false,
+			cropBoxMovable: true,    // 改為 true 讓使用者可以移動裁切框
+			cropBoxResizable: true,  // 改為 true 讓使用者可以調整大小
+			minContainerWidth: 200,
+			minContainerHeight: 200,
+			crop: function(e) {
+				// 可以在這裡監控裁切區域的大小
+				console.log('裁切區域尺寸：', e.detail.width, e.detail.height);
+			}
+		});
+    }
+
+    // 確認裁切
+    document.getElementById('cropButton').addEventListener('click', function() {
+		const canvas = cropper.getCroppedCanvas({
+			width: 800,   // 修改輸出寬度
+			height: 600   // 修改輸出高度，保持 4:3 比例
+		});
+
+        canvas.toBlob(function(blob) {
+            const file = new File([blob], `cropped_image_${currentImageIndex}.jpg`, {
+                type: 'image/jpeg'
+            });
+
+            // 新增預覽圖
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'position-relative';
+            previewDiv.innerHTML = `
+                <img src="${URL.createObjectURL(blob)}" 
+                    class="img-thumbnail" 
+                    style="width: 100px; height: 100px; object-fit: cover;">
+                <button type="button" 
+                        class="btn btn-danger btn-sm position-absolute top-0 end-0"
+                        data-index="${currentImageIndex}">×</button>
+            `;
+
+            imagePreview.appendChild(previewDiv);
+            processedImages.push(file);
+            
+            // 監聽刪除按鈕
+            previewDiv.querySelector('button').addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                processedImages = processedImages.filter((_, i) => i !== index);
+                previewDiv.remove();
+                updateImageCount();
+            });
+
+            updateImageCount();
+            cropperModal.hide();
+            cropper.destroy();
+        }, 'image/jpeg');
+    });
+
+    // 更新圖片計數
+    function updateImageCount() {
+        imageCount.textContent = processedImages.length;
+    }
+
+	// 新增文章前的登入檢查
+	document.getElementById('addArticleBtn').addEventListener('click', async function() {
+		try {
+			// 檢查登入狀態
+			const response = await fetch('/forum/checkLogin');
+			const data = await response.json();
+			
+			if (data.isLoggedIn) {
+				// 已登入，顯示新增文章 Modal
+				const modal = new bootstrap.Modal(document.getElementById('addArticleModal'));
+				modal.show();
+			} else {
+				// 未登入，顯示提示
+				alert('請先登入');
+				// 可選：重導向到登入頁面
+				window.location.href = '/login';
+			}
+		} catch (error) {
+			console.error('Error checking login status:', error);
+			alert('系統錯誤，請稍後再試');
+		}
+	});
+	
+	// 新增文章表單提交處理
+	document.getElementById('save-article-button').addEventListener('click', async function() {
+		// 獲取表單數據
+		const title = document.getElementById('article-title').value.trim();
+		const category = document.getElementById('article-category').value;
+		const content = document.getElementById('article-content').value.trim();
+		const price = document.getElementById('article-price').value;
+		const condition = document.getElementById('article-condition').value;
+		
+
+		// 驗證表單數據
+		if (!title) {
+			alert('請輸入文章標題');
+			return;
+		}
+		if (title.length > 30) {
+			alert('標題不能超過30字');
+			return;
+		}
+		
+		if (!content) {
+			alert('請輸入文章內容');
+			return;
+		}
+		
+		if (content.length > 300) {
+			alert('內容不能超過300字');
+			return;
+		}
+		
+		if (!category) {
+			alert('請選擇文章分類');
+			return;
+		}
+
+		// 驗證圖片
+		if (processedImages.length === 0) {
+			alert('請至少上傳一張圖片');
+			return;
+		}
+
+		if (!price || isNaN(price) || price <= 0) {
+			alert('請輸入有效的價格');
+			return;
+		}
+
+		if (!condition) {
+			alert('請選擇商品狀態');
+			return;
+		}
+		
+		// 創建 FormData 對象
+		const formData = new FormData();
+		formData.append('forumArticleTitle', document.getElementById('article-title').value);
+		formData.append('forumArticleItemType', document.getElementById('article-category').value);
+		formData.append('forumArticleContent', document.getElementById('article-content').value);
+		formData.append('forumArticlePrice', price);
+		formData.append('forumArticleItemCondition', condition);
+		formData.append('forumArticleStatus', 1);
+
+		// 添加處理過的圖片
+		processedImages.forEach(file => {
+		formData.append('images', file);
+		});
+
+		try {
+			const response = await fetch('/forum/addArticle', {
+				method: 'POST',
+				body: formData
+			});
+
+			if (response.ok) {
+				// 關閉 Modal
+				const modal = bootstrap.Modal.getInstance(document.getElementById('addArticleModal'));
+				modal.hide();
+				
+				// 重新加載文章列表
+				loadArticles(1);
+				
+				// 重置表單
+				resetArticleForm();
+				
+				alert('文章發布成功！');
+			} else {
+				alert('發布失敗，請稍後重試');
+			}
+		} catch (error) {
+			console.error('Error submitting article:', error);
+			alert('發布失敗，請稍後重試');
+		}
+	});
+	
+	    // 事件監聽器設置
+	    document.getElementById('prev-page').addEventListener('click', () => {
+	        if (currentPage > 1) {
+	            loadArticles(currentPage - 1);
+	        }
+	    });
+	
+	    document.getElementById('next-page').addEventListener('click', () => {
+	        loadArticles(currentPage + 1);
+	    });
+
+		// 搜尋按鈕點擊事件
+		document.getElementById('search-button').addEventListener('click', () => {
+			currentPage = 1; // 重置頁碼到第一頁
+    		loadArticles(currentPage);
+		});
+
+		document.getElementById('clear-button').addEventListener('click', () => {
+			// 清空搜尋欄位
+			document.getElementById('category-filter').value = '';
+			document.getElementById('search-bar').value = '';
+			document.getElementById('start-date-filter').value = '';
+			document.getElementById('end-date-filter').value = '';
+			// 初始加載第一頁
+			loadArticles(1);
+		});
+
+		function resetArticleForm() {
+			// 重置表單內容
+			document.getElementById('add-article-form').reset();
+			// 清空圖片預覽區
+			document.getElementById('image-preview').innerHTML = '';
+			// 清空圖片文件輸入
+			document.getElementById('article-image').value = '';
+			// 重置已處理的圖片數組
+			processedImages = [];
+			// 重置圖片計數
+			document.getElementById('image-count').textContent = '0';
+		}
+
+	
+		// 初始加載第一頁
+		loadArticles(1);
+	});
+    </script>
+</body>
+</html>

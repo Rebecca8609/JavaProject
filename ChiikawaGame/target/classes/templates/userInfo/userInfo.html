@@ -1,0 +1,243 @@
+<!-- http://localhost:8080/userInfo -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>會員資料總覽</title>
+<link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+<style>
+/* 垂直置中表格內容 */
+#userTable td, #newUserTable td {
+	vertical-align: middle;
+}
+
+/* 調整輸入框與按鈕的垂直對齊 */
+.input-group, .form-control, .form-select, .btn {
+	display: flex;
+	align-items: center;
+	height: 100%;
+}
+
+/* 密碼欄位顯示/隱藏按鈕的對齊 */
+.user-password {
+	display: inline-flex;
+	align-items: center;
+	height: calc(1.5em + 0.75rem + 2px);
+}
+</style>
+</head>
+
+<body>
+	<div th:replace="~{layout/saHeader}"></div>
+	<div class="container mt-4">
+
+		<!-- 查詢會員資料 -->
+		<div class="mb-4">
+			<h2>查詢會員</h2>
+			<input type="text" id="searchInput" class="form-control"
+				placeholder="輸入會員資料來查詢" onkeyup="searchUserInfo()">
+		</div>
+		<br>
+
+		<!-- 新增會員資料 -->
+		<h2>新增會員</h2>
+		<table id="newUserTable" class="table table-striped align-middle">
+			<tr>
+				<td><label for="newUserName">會員姓名</label> <input type="text"
+					id="newUserName" class="form-control" placeholder="會員姓名"></td>
+				<td><label for="newUserEmail">會員信箱</label> <input type="email"
+					id="newUserEmail" class="form-control" placeholder="會員信箱"></td>
+				<td><label for="newUserPassword">會員密碼</label>
+					<div class="input-group">
+						<input type="password" id="newUserPassword" class="form-control"
+							placeholder="會員密碼">
+						<button class="btn btn-outline-secondary"
+							onclick="togglePassword('newUserPassword')">顯示密碼</button>
+					</div></td>
+				<td><label for="newUserTel">會員電話</label> <input type="text"
+					id="newUserTel" class="form-control" placeholder="會員電話"></td>
+				<td><label for="newUserStatus">帳號狀態</label> <select
+					id="newUserStatus" class="form-select">
+						<option value="1">帳號使用中</option>
+						<option value="2">帳號已停權</option>
+				</select></td>
+				<td>
+					<button class="btn btn-primary mt-4" onclick="addUser()">新增</button>
+				</td>
+			</tr>
+		</table>
+		<br>
+
+
+		<!-- 會員資料列表 -->
+		<h2>會員列表</h2>
+		<table id="userTable" class="table table-striped align-middle">
+			<thead>
+				<tr>
+					<th>會員ID</th>
+					<th>會員姓名</th>
+					<th>會員信箱</th>
+					<th>會員密碼</th>
+					<th>會員電話</th>
+					<th>帳號狀態</th>
+					<th>操作</th>
+				</tr>
+			</thead>
+			<tbody id="userTableBody"></tbody>
+		</table>
+	</div>
+
+	<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+	<script>
+        // 初始化頁面時載入會員資料
+        document.addEventListener("DOMContentLoaded", loadUserInfo);
+
+        // 查詢管理員資料
+        function searchUserInfo() {
+    	const filter = document.getElementById("searchInput").value.toLowerCase();
+    	const rows = document.querySelectorAll("#userTableBody tr");
+    	rows.forEach(row => {
+        const userName = row.cells[1].querySelector("input").value.toLowerCase();
+        const userEmail = row.cells[2].querySelector("input").value.toLowerCase();
+        const userTel = row.cells[4].querySelector("input").value.toLowerCase();
+        
+        const match = userName.includes(filter) || userEmail.includes(filter) || userTel.includes(filter);
+        row.style.display = match ? "" : "none";
+    });
+}
+
+
+        // 載入管理員資料
+       function loadUserInfo() {
+    	fetch("/userInfo/json")
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.getElementById("userTableBody");
+            tableBody.innerHTML = "";
+
+            data.forEach(user => {
+                const row = `
+                    <tr>
+                        <td>${user.userId}</td>
+                        <td>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="${user.userName}" contenteditable="true">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group">
+                                <input type="email" class="form-control" value="${user.userEmail}" contenteditable="true">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group">
+                                <input type="password" class="form-control user-password" value="${user.userPassword}">
+                                <button class="btn btn-outline-secondary" onclick="togglePasswordInput(this)">顯示密碼</button>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="${user.userTel}" contenteditable="true">
+                            </div>
+                        </td>
+                        <td>
+                            <select class="form-select user-status">
+                                <option value="1" ${user.userStatus == 1 ? 'selected' : ''}>帳號使用中</option>
+                                <option value="2" ${user.userStatus == 2 ? 'selected' : ''}>帳號已停權</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-success" onclick="saveUserChanges(${user.userId}, this)">儲存</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML("beforeend", row);
+            });
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("無法載入會員資料，請稍後再試。");
+        });
+}
+
+
+        // 新增會員
+        function addUser() {
+    const newUser = {
+        userName: document.getElementById("newUserName").value,
+        userEmail: document.getElementById("newUserEmail").value,
+        userPassword: document.getElementById("newUserPassword").value,
+        userTel: document.getElementById("newUserTel").value, // 修正此處
+        userStatus: document.getElementById("newUserStatus").value
+    };
+
+    fetch("/userInfo/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser)
+    })
+    .then(response => response.text())
+    .then(message => {
+        alert(message);
+        // 清空輸入欄位並重新載入資料
+        document.getElementById("newUserName").value = "";
+        document.getElementById("newUserEmail").value = "";
+        document.getElementById("newUserPassword").value = "";
+        document.getElementById("newUserTel").value = "";
+        document.getElementById("newUserStatus").value = "1";
+        loadUserInfo();
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("新增失敗，請稍後再試。");
+    });
+}
+
+        // 切換密碼顯示/隱藏
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === "password" ? "text" : "password";
+        }
+
+        function togglePasswordInput(button) {
+            const input = button.previousElementSibling;
+            input.type = input.type === "password" ? "text" : "password";
+            button.textContent = input.type === "password" ? "顯示密碼" : "隱藏密碼";
+        }
+
+        function saveUserChanges(userId, button) {
+    const row = button.closest("tr");
+    const userName = row.cells[1].querySelector("input").value.trim();
+    const userEmail = row.cells[2].querySelector("input").value.trim();
+    const userPassword = row.querySelector(".user-password").value.trim();
+    const userTel = row.cells[4].querySelector("input").value.trim();
+    const userStatus = row.querySelector(".user-status").value;
+
+    const updatedUser = {
+        userId,
+        userName,
+        userEmail,
+        userPassword,
+        userTel,
+        userStatus: parseInt(userStatus)
+    };
+
+    fetch("/userInfo/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedUser)
+    })
+    .then(response => response.text())
+    .then(message => {
+        alert(message);
+        loadUserInfo();
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("更新失敗，請稍後再試。");
+    });
+}
+    </script>
+</body>
+</html>

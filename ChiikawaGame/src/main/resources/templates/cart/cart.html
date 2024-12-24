@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>購物車</title>
+<!-- 引入 Bootstrap CSS -->
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+	rel="stylesheet">
+<script
+	src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<style>
+
+.main-content {
+    padding-top: 80px; /* 根據 Header 的高度進行調整 */
+    background-color: #ffffff; /* 主內容背景色 */
+}
+
+
+/* 確保與首頁一致的 section 樣式 */
+.section-container {
+	background-color: #f8f9fa;
+	border-radius: 10px;
+	padding: 20px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+	margin-bottom: 20px;
+}
+
+.product-display {
+	display: flex;
+	gap: 20px;
+}
+
+.product-gallery {
+	flex: 2;
+}
+
+.product-gallery .main-image {
+	width: auto;
+	max-width: 100%; /* 最大寬度不超過容器 */
+	max-height: 500px; /* 設定最大高度 */
+	margin: 0 auto; /* 水平置中 */
+	border-radius: 8px;
+	object-fit: contain; /* 保持圖片比例 */
+}
+
+.product-gallery .thumbnail-row {
+	margin-top: 10px;
+	display: flex;
+	gap: 10px;
+}
+
+.product-gallery .thumbnail {
+	width: 80px;
+	height: 80px;
+	border-radius: 8px;
+	cursor: pointer;
+	object-fit: cover;
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-gallery .thumbnail:hover {
+	transform: scale(1.05);
+	box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.product-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.product-info h3 {
+	font-size: 1.8em;
+	font-weight: bold;
+}
+
+.product-info .price {
+	font-size: 1.6em;
+	color: #e74c3c;
+	font-weight: bold;
+}
+
+.product-info .action-buttons {
+	margin-top: 20px;
+	display: flex;
+	gap: 10px;
+}
+
+.btn-custom {
+	font-size: 1.2em;
+	border-radius: 8px;
+	padding: 10px 20px;
+}
+
+.btn-add-cart {
+	background-color: #ff9800;
+	color: white;
+	border: none;
+}
+
+.btn-add-cart:hover {
+	background-color: #e68a00;
+}
+
+.btn-buy-now {
+	background-color: #4caf50;
+	color: white;
+	border: none;
+}
+
+.btn-buy-now:hover {
+	background-color: #43a047;
+}
+
+/* 統一選項框的樣式 */
+.form-select {
+	height: 45px; /* 統一高度 */
+	font-size: 1rem; /* 統一字體大小 */
+	border-radius: 8px; /* 統一圓角 */
+}
+/* 商品名稱樣式 */
+.product-title {
+	background-color: #FFD700; /* 金黃色背景 */
+	color: #000; /* 黑色文字 */
+	padding: 10px;
+	border-radius: 5px;
+	font-weight: bold;
+	margin-bottom: 15px;
+	font-size: 1.8em; /* 突出商品名稱 */
+}
+
+/* 新增標題背景樣式 */
+.section-title {
+	background-color: #FFD700; /* 金黃色背景 */
+	color: #000; /* 黑色文字 */
+	padding: 10px;
+	border-radius: 5px;
+	font-weight: bold;
+	margin-bottom: 15px;
+}
+
+/* 單人評價的框架樣式 */
+.review-item {
+	border: 1px solid #ddd; /* 邊框顏色 */
+	border-radius: 8px; /* 圓角 */
+	padding: 15px; /* 內邊距 */
+	margin-bottom: 15px; /* 與下一個評價的間距 */
+	background-color: #fefefe; /* 背景色 */
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 陰影效果 */
+}
+
+.review-header p {
+	margin: 5px 0; /* 每段間距 */
+	font-weight: bold; /* 加粗 */
+}
+
+.review-body p {
+	margin: 5px 0; /* 每段間距 */
+	color: #555; /* 文字顏色 */
+	font-size: 0.95em; /* 稍小字體 */
+}
+/* 按鈕區域樣式 */
+.rating-filter {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.star-buttons, .extra-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px; /* 每個按鈕的間距 */
+}
+
+/* 星級按鈕樣式 */
+.filter-btn {
+	padding: 8px 12px;
+	border: none;
+	border-radius: 5px;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: background-color 0.2s, color 0.2s;
+}
+
+.star-btn {
+	background-color: black;
+	color: white;
+}
+
+.star-btn:hover {
+	background-color: #444; /* 浅灰色 */
+}
+
+.filter-btn.active {
+	background-color: #e74c3c;
+	color: white;
+}
+
+.filter-btn:hover {
+	background-color: #f39c12; /* 橙色 */
+}
+
+/* 修改上一張、下一張按鈕顏色 */
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    filter: invert(100%);
+    opacity: 0.8;
+}
+
+.carousel-control-prev-icon:hover,
+.carousel-control-next-icon:hover {
+    opacity: 1;
+}
+</style>
+</head>
+<body>
+	<!-- 引入 Header -->
+	<div th:replace="~{layout/userHeader}"></div>
+
+    <!-- 主要內容 -->
+    <main class="main-content">
+        <div class="container my-5">
+            <div class="cart-container">
+                <h2 class="text-center mb-4">購物車</h2>
+                <div id="cart-items"></div>
+                <div class="total text-end" id="total"></div>
+                <button class="checkout-btn btn btn-success" id="checkout-btn" onclick="checkout()">結帳</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer>
+        <p>© 2024 我的商店</p>
+    </footer>
+
+    <script>
+        // 保持原本的 JavaScript 載入購物車和操作功能
+        async function loadCart() {
+            try {
+                const response = await fetch('/api/cart');
+                if (!response.ok) throw new Error("無法取得購物車資料");
+                const cart = await response.json();
+                renderCart(cart);
+            } catch (error) {
+                console.error(error.message);
+                alert("載入購物車失敗，請稍後再試");
+            }
+        }
+        
+        document.addEventListener("DOMContentLoaded", function () {
+            // 加載購物車摘要
+            loadCartSummary();
+
+            // 綁定提交訂單的事件
+            const checkoutForm = document.getElementById("checkout-form");
+            checkoutForm.addEventListener("submit", submitOrder);
+        });
+        
+        function loadCartSummary() {
+            const cartSummaryContainer = document.getElementById("cart-summary");
+
+            if (!cartSummaryContainer) {
+                console.warn("Element 'cart-summary' not found.");
+                return; // 如果該元素不存在，則跳過
+            }
+
+            const cartItems = JSON.parse(localStorage.getItem("cartItems"));
+            const cartTotal = localStorage.getItem("cartTotal");
+
+            if (!cartItems || cartItems.length === 0) {
+                cartSummaryContainer.innerHTML = "<li class='list-group-item'>您的購物車是空的。</li>";
+                return;
+            }
+
+            cartItems.forEach(item => {
+                const listItem = document.createElement("li");
+                listItem.className = "list-group-item";
+                listItem.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-8">${item.itemName} x ${item.itemQuantity}</div>
+                        <div class="col-md-4 text-end">$${item.itemPrice.toFixed(2)}</div>
+                    </div>
+                `;
+                cartSummaryContainer.appendChild(listItem);
+            });
+
+            const totalItem = document.createElement("li");
+            totalItem.className = "list-group-item text-end fw-bold";
+            totalItem.textContent = `總計: $${parseFloat(cartTotal).toFixed(2)}`;
+            cartSummaryContainer.appendChild(totalItem);
+        }
+
+
+        async function submitOrder(event) {
+            event.preventDefault(); // 阻止表單默認提交行為
+
+            const recipientName = document.getElementById("recipient").value;
+            const address = document.getElementById("address").value;
+            const shippingMethod = document.getElementById("shipping-method").value;
+            const cartItems = JSON.parse(localStorage.getItem("cartItems"));
+
+            if (!recipientName || !address || !shippingMethod || !cartItems) {
+                alert("請填寫完整的物流資訊或檢查購物車內容！");
+                return;
+            }
+
+            const orderData = {
+                recipientName,
+                address,
+                shippingMethod,
+                cartItems
+            };
+
+            try {
+                const response = await fetch('/api/cart/checkout', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(orderData)
+                });
+
+                if (!response.ok) throw new Error("提交訂單失敗");
+
+                const result = await response.json();
+                alert("訂單提交成功！訂單編號：" + result.orderId);
+
+                // 清除本地存儲並跳轉到付款頁面
+                localStorage.removeItem("cartItems");
+                localStorage.removeItem("cartTotal");
+                window.location.href = result.redirectUrl;
+            } catch (error) {
+                console.error(error.message);
+                alert("提交訂單失敗：" + error.message);
+            }
+        }
+        
+        function renderCart(cart) {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const totalContainer = document.getElementById('total');
+
+            cartItemsContainer.innerHTML = ''; // 清空現有內容
+
+            if (!cart.cartItems || cart.cartItems.length === 0) {
+                cartItemsContainer.innerHTML = '<p>您的購物車是空的。</p>';
+                totalContainer.textContent = '';
+                return;
+            }
+
+            cart.cartItems.forEach(item => {
+                if (!item || !item.itemName) {
+                    console.error("購物車項目資料缺失", item);
+                    return;
+                }
+
+                const cartItemDiv = document.createElement('div');
+                cartItemDiv.className = 'cart-item p-3';
+
+                const imageUrl = item.imageUrl || '/images/default-placeholder.png';
+
+                // 在這裡插入動態生成的商品連結
+                const link = `/cart/item/${item.itemId}`; // 確保使用正確的 itemId
+                cartItemsContainer.innerHTML += `
+                    <div class="row">
+                        <div class="col-md-3">
+                            <img src="${imageUrl}" alt="${item.itemName}" class="img-fluid">
+                        </div>
+                        <div class="col-md-5">
+                            <!-- 動態生成的商品連結 -->
+                            <a href="${link}" class="text-decoration-none text-primary">
+                                <h5>${item.itemName}</h5>
+                            </a>
+
+                            <p>${item.itemInfo || '無詳細描述'}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <p>價格: $${item.itemPrice.toFixed(2)}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" min="1" value="${item.itemQuantity}" class="form-control" onchange="updateQuantity(${item.cartItemId}, this.value)">
+                        </div>
+                        <div class="col-md-2 mt-2">
+                            <button class="btn btn-danger remove-btn" onclick="removeFromCart(${item.cartItemId})">移除</button>
+                        </div>
+                    </div>
+                `;
+
+                cartItemsContainer.appendChild(cartItemDiv);
+            });
+
+            totalContainer.textContent = `總計: $${cart.cartTotal.toFixed(2)}`;
+        }
+
+
+        async function checkout() {
+            try {
+                const response = await fetch('/api/cart');
+                if (!response.ok) throw new Error("結帳失敗，請稍後再試");
+
+                const cart = await response.json();
+                localStorage.setItem("cartItems", JSON.stringify(cart.cartItems));
+                localStorage.setItem("cartTotal", cart.cartTotal);
+                window.location.href = "/cart/checkout";
+            } catch (error) {
+                console.error(error.message);
+                alert(error.message);
+            }
+        }
+
+
+        async function updateQuantity(cartItemId, quantity) {
+            if (quantity <= 0) {
+                alert("數量必須大於 0");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/cart/items/${cartItemId}?quantity=${quantity}`, {
+                    method: 'PUT'
+                });
+                if (!response.ok) throw new Error("更新數量失敗");
+                loadCart();
+            } catch (error) {
+                console.error(error.message);
+                alert(error.message);
+            }
+        }
+
+
+        async function removeFromCart(cartItemId) {
+            try {
+                const response = await fetch(`/api/cart/items/${cartItemId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error("移除商品失敗");
+                loadCart();
+            } catch (error) {
+                console.error(error.message);
+                alert(error.message);
+            }
+        }
+
+        window.onload = loadCart;
+    </script>
+</body>
+</html>

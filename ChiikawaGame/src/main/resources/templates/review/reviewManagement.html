@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>評論總覽</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/air-datepicker@3.3.5/air-datepicker.min.css" rel="stylesheet">
+    <style>
+        /* 標籤欄 */
+        .nav-tabs .nav-link {
+            color: #252525;
+            font-weight: bold;
+            padding: 10px 15px;
+            border: none;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #fff;
+            background-color: #dc3545;
+            border-radius: 5px;
+        }
+
+        .tabs-container {
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .remove-btn{
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+	<div th:replace="~{layout/saHeader}"></div>
+    <div class="container mt-4">
+        <h2>查詢列表</h2>
+        <div class="mb-4" style="display: flex; gap: 10px; align-items: center;">
+            <label for="searchInput" style="flex-shrink: 0;">搜尋評論:</label>
+            <input type="text" id="searchInput" class="form-control" style="flex: 1 1 50%;" placeholder="可輸入評論ID、訂單編號、評論內容、評論者ID來查詢">
+            <label for="startDatepicker" style="flex-shrink: 0;">搜尋起始日期:</label>
+            <input class="form-control" id="startDatepicker" data-language='en' size="30" style="flex: 1 1 25%;">
+            <label for="endDatepicker" style="flex-shrink: 0;">結束日期:</label>
+            <input class="form-control" id="endDatepicker" data-language='en' size="30" style="flex: 1 1 25%;">
+            <button class="btn btn-primary" onclick="search()" style="flex-shrink: 0; flex-grow: 1;">搜尋</button>
+            <button class="btn btn-danger" onclick="deleteInput()" style="flex-shrink: 0; flex-grow: 1;">清除</button>
+        </div>
+        
+        <div class="mb-4">
+            <h2>評論列表</h2>
+            <!-- 標籤欄 -->
+            <div class="tabs-container">
+                <ul class="nav nav-tabs" id="orderTabs">
+                    <li class="nav-item"><a class="nav-link active" id="allTab" href="#" onclick="selectTab('all')">全部</a></li>
+                    <li class="nav-item"><a class="nav-link" id="visibleTab" href="#" onclick="selectTab('visible')">顯示中</a></li>
+                    <li class="nav-item"><a class="nav-link" id="invisibleTab" href="#" onclick="selectTab('invisible')">隱藏中</a></li>
+                </ul>
+            </div>
+            <table id="rvwTable" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th style="width:10%">評論編號</th>
+                        <th style="width:10%">訂單編號</th>
+                        <th style="width:8%">評論日期</th>
+                        <th style="width:10%">商品圖片</th>
+                        <th class="col-3">評論內容</th>
+                        <th>評分</th>
+                        <th style="width:10%">評論者編號</th>
+                        <th>顯示狀態</th>
+                        <th colspan="2">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="rvwTableBody">
+                    <!-- 資料將通過 JavaScript 動態插入 -->
+                </tbody>
+            </table>
+
+            <!-- 分頁顯示 -->
+            <ul class="pagination" id="pagination"></ul>
+            <div id="search-results"></div>
+            <ul class="pagination" id="pagination2"></ul>
+        </div>
+    </div>
+
+    <!-- Modal 結構 -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel">評論圖片</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalImagesContainer">
+                    <!-- 圖片將在這裡動態加載 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/air-datepicker@3.3.5/air-datepicker.min.js"></script>
+    
+    
+    <script>
+    // 全局搜尋條件物件
+    let searchFilters = {
+        reviewStatus: null,
+        startDate: null,
+        endDate: null,
+        searchInput: null
+    };
+    
+    // 日期選擇器
+    //https://pluscdev.com/tutorial-air-datepicker/
+    const en = {
+        days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        daysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        daysMin: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+        months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        today: 'Today',
+        clear: 'Clear',
+        dateFormat: 'yyyy/MM/dd',
+        timeFormat: 'hh:mm aa',
+        firstDay: 0
+    }
+
+    // 初始化日期選擇器
+    const startDatepicker = new AirDatepicker('#startDatepicker', {
+        locale: en,
+        dateFormat: 'yyyy/MM/dd',
+        autoClose: true,
+    });
+
+    const endDatepicker = new AirDatepicker('#endDatepicker', {
+        locale: en,
+        dateFormat: 'yyyy/MM/dd',
+        autoClose: true,
+    });
+    
+
+    // 搜尋方法更新
+    function search() {
+        // 獲取模糊搜尋輸入
+        searchFilters.searchInput = $('#searchInput').val().trim();
+
+        // 獲取起始日期和結束日期
+        const startDate = $('#startDatepicker').val();
+        const endDate = $('#endDatepicker').val();
+
+        searchFilters.startDate = startDate ? convertToGMT8(new Date(startDate)) : null;
+        searchFilters.endDate = endDate ? convertToGMT8(new Date(endDate)) : null;
+
+        // 清空狀態以重新搜索
+        searchFilters.reviewStatus = null;
+
+        // 更新 Tab 樣式為 "全部"
+        updateTabUI('all'); // 確保全部標籤被選中
+
+        // 加載第一頁數據
+        loadReviews(1);
+    }
+
+    
+    // 將時間轉換為 GMT+8
+    function convertToGMT8(date) {
+        const localDate = new Date(date);
+        localDate.setHours(localDate.getHours() + 8);  // 增加 8 小時
+        return localDate.toISOString().split('T')[0];  // 只取日期部分
+    }
+
+    // 加載評論資料
+    function loadReviews(pageNumber = 1) {
+        const { reviewStatus, startDate, endDate, searchInput } = searchFilters;
+
+        // 初始化基礎的 URL
+        let url = `/reviews/search?p=${pageNumber}`;
+
+        // 動態拼接篩選條件到 URL
+        if (reviewStatus !== null) {
+            url += `&reviewStatus=${reviewStatus}`;
+        }
+        if (startDate) {
+            url += `&startDate=${encodeURIComponent(startDate)}`;
+        }
+        if (endDate) {
+            url += `&endDate=${encodeURIComponent(endDate)}`;
+        }
+        if (searchInput) {
+            url += `&reviewId=${encodeURIComponent(searchInput)}`;
+            url += `&reviewOrderId=${encodeURIComponent(searchInput)}`;
+            url += `&reviewComment=${encodeURIComponent(searchInput)}`;
+            url += `&reviewBuyerId=${encodeURIComponent(searchInput)}`;
+        }
+
+        // console.log("API URL:", url); //檢查抓到的路徑
+
+        // 發送 AJAX 請求
+        $.ajax({
+            url: url,
+            method: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                const reviews = data.content;
+                renderTable(reviews);
+                renderPagination(pageNumber, data.totalPages);
+            },
+            error: function (err) {
+                console.error("Error loading reviews:", err);
+                alert("無法加載評論資料，請稍後再試！");
+            }
+        });
+    }
+
+    // 渲染表格
+    function renderTable(reviews) {
+        const tableBody = $('#rvwTableBody');
+        tableBody.empty();
+
+        reviews.forEach(review => {
+            const row = `
+                <tr>
+                    <td>${review.reviewId}</td>
+                    <td>${review.reviewOrderId}</td>
+                    <td>${new Date(review.reviewDate).toLocaleString('zh-TW', { hour12: false })}</td>
+                    <td><button class="btn btn-outline-secondary" onclick="showImageModal(${review.reviewId})">查看圖片</button></td>
+                    <td><textarea class="form-control" style="height: 80px; resize: none;" readonly>${review.reviewComment}</textarea></td>
+                    <td>${review.reviewEvaluation}/5</td>
+                    <td>${review.reviewBuyerId}</td>
+                    <td>${review.reviewStatus == 1 ? '顯示' : '隱藏'}</td>
+                    <td>
+                        <select class="form-select review-status" data-id="${review.reviewId}">
+                            <option value="" disabled selected>請選擇狀態</option>
+                            <option value="1">顯示</option>
+                            <option value="2">隱藏</option>
+                        </select>
+                    </td>
+                    <td><button type="button" class="btn btn-success" onclick="updateReviewStatus(${review.reviewId})">更新</button></td>
+                </tr>
+            `;
+            tableBody.append(row);
+        });
+    }
+
+    function showImageModal(reviewId) {
+        // 將 reviewId 存儲到 Modal 的 data-* 屬性中
+        $('#imageModal').data('reviewId', reviewId);
+
+        $.ajax({
+            url: `/reviews/getImagesByReviewId?reviewId=${reviewId}`,
+            method: 'GET',
+            success: function(data) {
+                const modalImagesContainer = $('#modalImagesContainer');
+                modalImagesContainer.empty();
+
+                if (data.length > 0) {
+                    data.forEach(imageData => {
+                        const imageUrl = imageData.imageUrl;
+                        const imageElement = `<img src="${imageUrl}" class="img-fluid mb-3" alt="評論圖片" style="width:150px;">`;
+
+                        const removeBtn = $('<button></button>', {
+                            text: '刪除',
+                            class: 'remove-btn btn btn-danger',
+                            click: function() {
+                                deleteImage(imageData.reviewPhotoId); // 傳入圖片 ID
+                            }
+                        });
+
+                        const imageWithButton = $('<div></div>', { class: 'image-container' })
+                            .append(imageElement)
+                            .append(removeBtn);
+
+                        modalImagesContainer.append(imageWithButton);
+                    });
+                } else {
+                    modalImagesContainer.append('<p>沒有圖片</p>');
+                }
+
+                $('#imageModal').modal('show'); // 顯示 Modal
+            },
+            error: function() {
+                alert("無法載入圖片！");
+            }
+        });
+    }
+
+    // 刪除圖片請求
+    function deleteImage(reviewPhotoId) {
+        if (confirm('確定要刪除這張圖片嗎？')) {
+            $.ajax({
+                url: `/reviews/images/${reviewPhotoId}`,
+                method: 'DELETE',
+                success: function() {
+                    // 從畫面移除已刪除的圖片
+                    $(`.image-container:has(img[src*="${reviewPhotoId}"])`).remove();
+                    
+                    // 如果已經沒有圖片，顯示提示
+                    if ($('#modalImagesContainer').children().length === 0) {
+                        $('#modalImagesContainer').append('<p>沒有圖片</p>');
+                    }
+                },
+                error: function() {
+                    alert('刪除圖片失敗！');
+                }
+            });
+        }
+    }
+
+    // 狀態選擇(更新用)
+    function selectTab(tab) {
+        // 根據選擇的 Tab 更新 reviewStatus
+        searchFilters.reviewStatus = tab === 'visible' ? 1 : tab === 'invisible' ? 2 : null;
+
+        // 如果是重新點擊標籤時，需重置其他搜尋條件
+        if (tab === 'all') {
+            searchFilters.searchInput = null; // 清空模糊搜尋條件
+            searchFilters.startDate = null; // 清空日期範圍
+            searchFilters.endDate = null;
+            $('#searchInput').val(''); // 清空搜尋框
+            $('#startDatepicker').val(''); // 清空日期選擇器
+            $('#endDatepicker').val('');
+
+        }
+
+        // 加載第一頁的資料
+        loadReviews(1);
+
+        // 更新 Tab 樣式
+        updateTabUI(tab);
+    }
+
+    // 更新標籤樣式
+    function updateTabUI(selectedTab) {
+        $('.nav-link').removeClass('active'); // 清除所有標籤的活躍狀態
+
+        // 根據選中的標籤設置活躍狀態
+        if (selectedTab === 'all') {
+            $('#allTab').addClass('active');
+        } else if (selectedTab === 'visible') {
+            $('#visibleTab').addClass('active');
+        } else if (selectedTab === 'invisible') {
+            $('#invisibleTab').addClass('active');
+        }
+    };   
+
+    // 分頁按鈕渲染
+    function renderPagination(currentPage, totalPages) {
+        const pagination = $('#pagination');
+        pagination.empty();
+
+        if (currentPage > 1) {
+            pagination.append(`<li class="page-item"><a class="page-link" href="#" onclick="loadReviews(${currentPage - 1}); return false;">上一頁</a></li>`);
+        } else {
+            pagination.append(`<li class="page-item disabled"><span class="page-link">上一頁</span></li>`);
+        }
+
+        // 計算顯示範圍
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        // 調整 startPage 以避免超出範圍
+        if (endPage - startPage < maxPagesToShow - 1) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        // 顯示分頁按鈕
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === currentPage) {
+                pagination.append(`<li class="page-item active"><span class="page-link">${i}</span></li>`);
+            } else {
+                pagination.append(`<li class="page-item"><a class="page-link" href="#" onclick="loadReviews(${i}); return false;">${i}</a></li>`);
+            }
+        }
+
+        if (currentPage < totalPages) {
+            pagination.append(`<li class="page-item"><a class="page-link" href="#" onclick="loadReviews(${currentPage + 1}); return false;">下一頁</a></li>`);
+        } else {
+            pagination.append(`<li class="page-item disabled"><span class="page-link">下一頁</span></li>`);
+        }
+    }
+
+    // 更新評論狀態
+    function updateReviewStatus(reviewId) {
+        const selectedStatus = $(`.review-status[data-id="${reviewId}"]`).val();
+
+        if (selectedStatus === "") {
+            alert("請選擇有效的狀態！");
+            return;
+        }
+
+        $.ajax({
+            url: '/reviews/updateStatus',
+            type: 'POST',
+            data: {
+                reviewId: reviewId,
+                reviewStatus: selectedStatus
+            },
+            success: function (response) {
+                alert(response); // 顯示更新成功的訊息
+                loadReviews(); // 重新載入評論列表
+            },
+            error: function (err) {
+                console.error("Error updating review status:", err);
+                alert("更新失敗，請稍後再試！");
+            }
+        });
+    };
+
+    // 清空輸入欄位的值並返回初始狀態
+    function deleteInput() {
+        // 清空搜尋條件物件
+        searchFilters = {
+            reviewStatus: null,
+            startDate: null,
+            endDate: null,
+            searchInput: null
+        };
+
+        // 清空輸入框和日期選擇器
+        $('#searchInput').val('');
+        $('#startDatepicker').val('');
+        $('#endDatepicker').val('');
+
+        // 重置到 "全部" 標籤
+        updateTabUI('all');
+
+        // 顯示提示訊息
+        alert("輸入欄位已清除");
+
+        // 加載初始狀態的評論列表
+        loadReviews(1);
+    };
+
+    // 初始加載資料
+	$(document).ready(function () {
+	    // 取得今天的日期
+	    const today = new Date();
+	    // 格式化為 yyyy-MM-dd 格式
+	    const formattedToday = today.toISOString().split('T')[0]; // 例如：2024-11-18
+	
+	    // 加載第一頁的所有評論
+	    loadReviews(1);
+	});
+
+    </script>
+</body>
+
+</html>

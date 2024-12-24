@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>saHeader</title>
+
+
+
+</head>
+<body>
+	<!-- 頁首區域 -->
+	<header class="p-3 bg-dark text-white fixed-top">
+		<div class="container-fluid">
+			<div
+				class="d-flex flex-wrap align-items-center justify-content-between">
+				<!-- 管理操作選單 -->
+				<ul class="nav me-auto">
+					<li><a href="/homePage" class="btn btn-warning text-black">CHKWGame</a></li>
+				</ul>
+
+				<!-- 搜尋欄 -->
+				<form th:action="@{/itemSearch}" method="get"
+					class="d-flex justify-content-center me-auto">
+					<input type="text" name="keyword"
+						class="form-control form-control-dark me-2"
+						placeholder="Search..." th:value="${keyword}" aria-label="Search"
+						style="width: 300px;">
+					<button type="submit" class="btn btn-outline-light">搜尋</button>
+				</form>
+
+				<!-- 購物車按鈕和會員操作按鈕 -->
+				<div class="text-end d-flex align-items-center">
+					<a href="./cart.html" class="btn btn-outline-light me-2"> <i
+						class="bi bi-cart"></i> 購物車
+					</a>
+
+					<div class="text-end d-flex align-items-center">
+						<!-- 顯示登入按鈕，如果用戶未登入 -->
+						<div th:if="${session.user == null}">
+							<!-- 使用 a 標籤來顯示登入按鈕 -->
+							<a class="btn btn-outline-light" th:href="@{/login}">登入</a>
+						</div>
+					</div>
+
+					<div th:if="${session.user != null}">
+						<button class="btn btn-outline-light dropdown-toggle"
+							type="button" id="mantleDropdown" data-bs-toggle="dropdown"
+							aria-expanded="false">
+							<!-- Mantle -->
+
+						</button>
+						<ul class="dropdown-menu dropdown-menu-end"
+							aria-labelledby="mantleDropdown">
+							<li><a class="dropdown-item" href="/memberCenter">會員中心</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><a class="dropdown-item" href="/shopping-list.html">購物清單</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<!-- 登出會呼叫登出控制器 -->
+							<li><a class="dropdown-item" href="/logout">登出</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    fetch(`/loginData?timestamp=${new Date().getTime()}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("未登入，請先登入後再嘗試");
+            }
+            return response.json();
+        })
+        .then(data => {
+            const mantleDropdown = document.getElementById("mantleDropdown");
+            if (mantleDropdown) {
+                mantleDropdown.textContent = data.userName || "未知用戶";
+            }
+        })
+        .catch(error => {
+            console.error("加載失敗：", error);
+        });
+});
+    </script>
+
+
+</body>
+</html>

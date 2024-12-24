@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物流追蹤</title>
+
+<!-- Import Bootstrap CSS -->
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+	rel="stylesheet">
+<!-- Optional: Import custom CSS if needed -->
+<style>
+/* 自訂樣式（如有需要） */
+</style>
+</head>
+<body>
+
+	<div th:replace="~{layout/saHeader}"></div>
+
+	<!-- 主內容 -->
+	<div class="container mt-4">
+		<h1 class="page-title text-center">物流追蹤</h1>
+		<form id="searchForm" class="row g-3 mb-4">
+			<div class="col-md-3">
+				<label for="orderIdInput" class="form-label">訂單ID</label> <input
+					type="number" id="orderIdInput" class="form-control"
+					placeholder="輸入訂單ID">
+			</div>
+			<div class="col-md-3">
+				<label for="trackingNumberInput" class="form-label">物流追蹤號</label> <input
+					type="text" id="trackingNumberInput" class="form-control"
+					placeholder="輸入物流追蹤號">
+			</div>
+			<div class="col-md-3">
+				<label for="statusSelect" class="form-label">物流狀態</label> <select
+					id="statusSelect" class="form-select">
+					<option value="">選擇狀態</option>
+					<option value="NOT_SHIPPED">未出貨</option>
+					<option value="SHIPPED">運送中</option>
+					<option value="RECEIVED">已收貨</option>
+					<option value="RETURNED">退貨</option>
+					<option value="CANCELLED">取消</option>
+				</select>
+			</div>
+			<div class="col-md-3 d-flex align-items-end">
+				<button type="button" class="btn btn-secondary"
+					onclick="resetSearchForm()">重置</button>
+			</div>
+		</form>
+
+		<!-- 載入指示器 -->
+		<div id="loadingIndicator" class="text-center my-4"
+			style="display: none;">
+			<div class="spinner-border" role="status">
+				<span class="visually-hidden">載入中...</span>
+			</div>
+		</div>
+
+		<!-- 物流信息表格 -->
+		<table class="table table-striped">
+			<thead>
+				<tr>
+					<th>訂單ID</th>
+					<th>收件人</th>
+					<th>地址</th>
+					<th>物流方式</th>
+					<th>物流狀態</th>
+					<th>追蹤號</th>
+					<th>物流單號圖片</th>
+					<th>操作</th>
+				</tr>
+			</thead>
+			<tbody id="shippingTableBody"></tbody>
+		</table>
+
+		<!-- 新增分頁區塊 -->
+		<nav aria-label="Page navigation">
+			<ul class="pagination justify-content-center"
+				id="paginationContainer"></ul>
+		</nav>
+	</div>
+
+	<!-- 編輯物流信息模態框 -->
+	<div class="modal fade" id="shippingInfoModal" tabindex="-1"
+		aria-labelledby="shippingInfoModalLabel">
+		<div class="modal-dialog">
+			<form id="shippingInfoForm">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="shippingInfoModalLabel">編輯物流信息</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"
+							aria-label="關閉"></button>
+					</div>
+					<div class="modal-body">
+						<!-- 表單內容 -->
+						<div class="mb-3">
+							<label for="modalRecipient" class="form-label">收件人</label> <input
+								type="text" id="modalRecipient" class="form-control" required>
+						</div>
+						<div class="mb-3">
+							<label for="modalAddress" class="form-label">地址</label> <input
+								type="text" id="modalAddress" class="form-control" required>
+						</div>
+						<div class="mb-3">
+							<label for="modalStatus" class="form-label">物流狀態</label> <select
+								id="modalStatus" class="form-select" required>
+								<option value="NOT_SHIPPED">未出貨</option>
+								<option value="SHIPPED">運送中</option>
+								<option value="RECEIVED">已收貨</option>
+								<option value="RETURNED">退貨</option>
+								<option value="CANCELLED">取消</option>
+							</select>
+						</div>
+
+						<div class="mb-3">
+							<label for="modalShippingMethod" class="form-label">物流方式</label>
+							<select id="modalShippingMethod" class="form-select" required>
+								<!-- 動態載入 -->
+							</select>
+						</div>
+
+						<div class="mb-3">
+							<label for="modalTrackingNumber" class="form-label">物流追蹤號</label>
+							<input type="text" id="modalTrackingNumber" class="form-control">
+						</div>
+
+						<div class="mb-3">
+							<label for="modalImageFile" class="form-label">上傳物流單號圖片</label> <input
+								type="file" id="modalImageFile" class="form-control"
+								accept="image/*" onchange="previewImage()"> <img
+								id="modalImagePreview" src="" alt="預覽"
+								style="max-width: 100%; margin-top: 10px; display: none;">
+						</div>
+					</div>
+					<div class="modal-footer">
+						<!-- 按鈕 -->
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">關閉</button>
+						<button type="button" class="btn btn-primary"
+							id="saveChangesButton" onclick="saveShippingChanges()">保存更改</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- JavaScript 部分 -->
+	<script>
+    // 狀態映射表
+    const statusMap = {
+        "NOT_SHIPPED": "未出貨",
+        "SHIPPED": "運送中",
+        "RECEIVED": "已收貨",
+        "RETURNED": "退貨",
+        "CANCELLED": "取消",
+    };
+
+    let shippingData = []; // 存放取得的整份資料
+    let currentPage = 1;
+    const itemsPerPage = 10;
+
+    let shippingMethods = []; // 用來存放所有可用的物流方式
+
+    // 預覽圖片功能
+    function previewImage() {
+        const input = document.getElementById("modalImageFile");
+        const preview = document.getElementById("modalImagePreview");
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = "block";
+            };
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            preview.style.display = "none";
+        }
+    }
+
+    function renderTable() {
+        const shippingTableBody = document.getElementById("shippingTableBody");
+        shippingTableBody.innerHTML = "";
+        
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageData = shippingData.slice(startIndex, endIndex);
+
+        pageData.forEach(item => {
+            const shippingInfo = item.shippingInfo;
+            const order = item.order;
+            const statusText = statusMap[shippingInfo.shippingInfoStatus] || shippingInfo.shippingInfoStatus || '無';
+
+            const imageCell = shippingInfo.shippingInfoImage
+                ? `<img src="data:image/png;base64,${shippingInfo.shippingInfoImage}" alt="物流單號圖片" style="max-width: 100px;" onerror="this.style.display='none'">`
+                : '無';
+
+            // 顯示物流方式名稱
+            const shippingMethodName = (shippingInfo.shippingMethod && shippingInfo.shippingMethod.methodName) 
+                                        ? shippingInfo.shippingMethod.methodName : '無';
+
+            const row = `
+                <tr>
+                    <td>${order.orderId}</td>
+                    <td>${shippingInfo.shippingInfoRecipient}</td>
+                    <td>${shippingInfo.shippingInfoAddress}</td>
+                    <td>${shippingMethodName}</td>
+                    <td>${statusText}</td>
+                    <td>${shippingInfo.shippingInfoTrackingNumber || '無'}</td>
+                    <td>${imageCell}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="editShippingInfo(${shippingInfo.shippingInfoId})">編輯</button>
+                    </td>
+                </tr>`;
+            shippingTableBody.insertAdjacentHTML("beforeend", row);
+        });
+
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const paginationContainer = document.getElementById("paginationContainer");
+        paginationContainer.innerHTML = "";
+
+        const totalPages = Math.ceil(shippingData.length / itemsPerPage);
+
+        // 上一頁
+        const prevLi = document.createElement("li");
+        prevLi.classList.add("page-item");
+        if (currentPage === 1) {
+            prevLi.classList.add("disabled");
+        }
+        prevLi.innerHTML = `<a class="page-link" href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>`;
+        prevLi.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+        paginationContainer.appendChild(prevLi);
+
+        // 頁碼按鈕
+        for (let i = 1; i <= totalPages; i++) {
+            const pageLi = document.createElement("li");
+            pageLi.classList.add("page-item");
+            if (currentPage === i) {
+                pageLi.classList.add("active");
+            }
+            pageLi.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+            pageLi.addEventListener("click", (e) => {
+                e.preventDefault();
+                currentPage = i;
+                renderTable();
+            });
+            paginationContainer.appendChild(pageLi);
+        }
+
+        // 下一頁
+        const nextLi = document.createElement("li");
+        nextLi.classList.add("page-item");
+        if (currentPage === totalPages) {
+            nextLi.classList.add("disabled");
+        }
+        nextLi.innerHTML = `<a class="page-link" href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>`;
+        nextLi.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        });
+        paginationContainer.appendChild(nextLi);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // 載入物流方式列表
+        loadShippingMethods();
+
+        // 即時搜索監聽
+        document.querySelectorAll("#orderIdInput, #trackingNumberInput, #statusSelect").forEach(el => {
+            el.addEventListener("input", () => searchShippingInfo());
+        });
+
+        // 根據 URL 參數搜尋
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderIdParam = urlParams.get('orderId');
+        if (orderIdParam) {
+            document.getElementById("orderIdInput").value = orderIdParam;
+            searchShippingInfo();
+        } else {
+            loadShippingInfo();
+        }
+    });
+
+    function loadShippingInfo() {
+        document.getElementById("loadingIndicator").style.display = "block";
+        fetch("/shipping")
+            .then(response => response.json())
+            .then(data => {
+                shippingData = data;
+                currentPage = 1;
+                renderTable();
+            })
+            .catch(error => console.error("加載物流信息時出錯:", error))
+            .finally(() => {
+                document.getElementById("loadingIndicator").style.display = "none";
+            });
+    }
+
+    function loadShippingMethods() {
+        fetch("/shipping-method")
+            .then(response => response.json())
+            .then(data => {
+                shippingMethods = data;
+                const methodSelect = document.getElementById("modalShippingMethod");
+                methodSelect.innerHTML = "";
+                shippingMethods.forEach(method => {
+                    const option = document.createElement("option");
+                    option.value = method.shippingMethodId;
+                    option.textContent = method.methodName;
+                    methodSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error("載入物流方式時發生錯誤:", error));
+    }
+
+    window.searchShippingInfo = () => {
+        const orderId = document.getElementById("orderIdInput").value.trim();
+        const trackingNumber = document.getElementById("trackingNumberInput").value.trim();
+        const status = document.getElementById("statusSelect").value;
+
+        let query = [];
+        if (orderId) query.push(`orderId=${orderId}`);
+        if (trackingNumber) query.push(`trackingNumber=${encodeURIComponent(trackingNumber)}`);
+        if (status) query.push(`status=${status}`);
+        const queryString = query.length ? `?${query.join("&")}` : "";
+
+        document.getElementById("loadingIndicator").style.display = "block";
+
+        fetch(`/shipping${queryString}`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP 錯誤！狀態碼：${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                shippingData = data;
+                currentPage = 1;
+                renderTable();
+            })
+            .catch(error => console.error("搜尋物流信息時出錯:", error.message))
+            .finally(() => {
+                document.getElementById("loadingIndicator").style.display = "none";
+            });
+    };
+
+    window.resetSearchForm = () => {
+        document.getElementById("orderIdInput").value = "";
+        document.getElementById("trackingNumberInput").value = "";
+        document.getElementById("statusSelect").value = "";
+        loadShippingInfo(); // 重新加載完整數據
+    };
+
+    window.editShippingInfo = (id) => {
+        document.getElementById("loadingIndicator").style.display = "block";
+
+        fetch(`/shipping/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("modalRecipient").value = data.shippingInfoRecipient || "";
+                document.getElementById("modalAddress").value = data.shippingInfoAddress || "";
+                document.getElementById("modalStatus").value = data.shippingInfoStatus || "";
+                document.getElementById("modalTrackingNumber").value = data.shippingInfoTrackingNumber || "";
+
+                // 設定物流方式預選 (若無則選第一個)
+                if (data.shippingMethod && data.shippingMethod.shippingMethodId) {
+                    document.getElementById("modalShippingMethod").value = data.shippingMethod.shippingMethodId;
+                } else if (shippingMethods.length > 0) {
+                    document.getElementById("modalShippingMethod").value = shippingMethods[0].shippingMethodId;
+                }
+
+                const previewImage = document.getElementById("modalImagePreview");
+                if (data.shippingInfoImage) {
+                    previewImage.src = `data:image/png;base64,${data.shippingInfoImage}`;
+                    previewImage.style.display = "block";
+                } else {
+                    previewImage.style.display = "none";
+                }
+
+                document.getElementById("saveChangesButton").setAttribute("data-shipping-id", id);
+                new bootstrap.Modal(document.getElementById("shippingInfoModal")).show();
+            })
+            .catch(error => console.error("獲取物流信息時出錯:", error))
+            .finally(() => {
+                document.getElementById("loadingIndicator").style.display = "none";
+            });
+    };
+
+    window.saveShippingChanges = () => {
+        const saveButton = document.getElementById("saveChangesButton");
+        const shippingId = saveButton.getAttribute("data-shipping-id");
+
+       const updatedData = {
+    shippingInfoRecipient: document.getElementById("modalRecipient").value.trim(),
+    shippingInfoAddress: document.getElementById("modalAddress").value.trim(),
+    shippingInfoStatus: document.getElementById("modalStatus").value,
+    shippingInfoTrackingNumber: document.getElementById("modalTrackingNumber").value.trim(),
+    order: { orderId: parseInt(document.getElementById("orderIdInput").value.trim(), 10) }, // 加入訂單 ID
+    shippingMethod: {
+        shippingMethodId: parseInt(document.getElementById("modalShippingMethod").value, 10)
+    }
+};
+
+        const formData = new FormData();
+        formData.append("shippingInfo", new Blob([JSON.stringify(updatedData)], { type: "application/json" }));
+
+        const imageFile = document.getElementById("modalImageFile").files[0];
+        if (imageFile) {
+            formData.append("imageFile", imageFile);
+        }
+
+        fetch(`/shipping/${shippingId}`, {
+            method: "PUT",
+            body: formData,
+        })
+            .then(response => {
+                if (response.ok) {
+                    alert("物流信息已更新");
+                    const modal = bootstrap.Modal.getInstance(document.getElementById("shippingInfoModal"));
+                    modal.hide();
+                    loadShippingInfo();
+                } else {
+                    response.text().then(text => alert("更新失敗：" + text));
+                }
+            })
+            .catch(error => console.error("更新物流信息時出錯:", error));
+    };
+</script>
+
+	<!-- 引入 Bootstrap JS -->
+	<script
+		src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

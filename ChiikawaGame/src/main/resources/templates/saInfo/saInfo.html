@@ -1,0 +1,200 @@
+<!-- http://localhost:8080/saInfo -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理員資料總覽</title>
+<link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+<style>
+  /* 垂直置中表格內容 */
+  #saTable td, #newSaTable td {
+      vertical-align: middle;
+  }
+  /* 調整輸入框與按鈕的垂直對齊 */
+  .input-group,
+  .form-control,
+  .form-select,
+  .btn {
+      display: flex;
+      align-items: center;
+      height: 100%;
+  }
+  /* 密碼欄位顯示/隱藏按鈕的對齊 */
+  .sa-password-group .btn-outline-secondary {
+      display: flex;
+      align-items: center;
+  }
+</style>
+</head>
+<body>
+  <div th:replace="~{layout/saHeader}"></div>
+  <div class="container mt-4">
+      <!-- 查詢管理員資料 -->
+      <div class="mb-4">
+          <h2>查詢管理員</h2>
+          <input type="text" id="searchInput" class="form-control" placeholder="輸入管理員資料來查詢" onkeyup="searchSaInfo()">
+      </div>
+      <br>
+      <!-- 新增管理員資料 -->
+      <h2>新增管理員</h2>
+      <table id="newSaTable" class="table table-striped align-middle">
+          <tr>
+              <td><label for="newUserName">管理員姓名</label><input type="text" id="newSaName" class="form-control" placeholder="管理員姓名"></td>
+              <td><label for="newUserEmail">管理員信箱</label><input type="email" id="newSaEmail" class="form-control" placeholder="管理員信箱"></td>
+              <td><label for="newUserPassword">管理員密碼</label>
+                  <div class="input-group sa-password-group">
+                      <input type="password" id="newSaPassword" class="form-control" placeholder="管理員密碼">
+                      <button class="btn btn-outline-secondary" onclick="togglePassword('newSaPassword')">顯示密碼</button>
+                  </div>
+              </td>
+              <td><label for="newUserTel">管理員電話</label><input type="text" id="newSaTel" class="form-control" placeholder="管理員電話"></td>
+              <td><label for="newUserStatus">帳號狀態</label>
+                  <select id="newSaStatus" class="form-select">
+                      <option value="1">帳號使用中</option>
+                      <option value="2">帳號已停權</option>
+                  </select>
+              </td>
+              <td><button class="btn btn-primary mt-4" onclick="addSa()">新增</button></td>
+          </tr>
+      </table>
+      <br>
+      <!-- 管理員資料列表 -->
+      <h2>管理員列表</h2>
+      <table id="saTable" class="table table-striped align-middle">
+          <thead>
+              <tr>
+                  <th>管理員ID</th>
+                  <th>管理員姓名</th>
+                  <th>管理員信箱</th>
+                  <th>管理員密碼</th>
+                  <th>管理員電話</th>
+                  <th>帳號狀態</th>
+                  <th>操作</th>
+              </tr>
+          </thead>
+          <tbody id="saTableBody"></tbody>
+      </table>
+  </div>
+  <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+  <script>
+		      // 初始化頁面時載入管理員資料
+		      document.addEventListener("DOMContentLoaded", loadSaInfo);
+		      // 查詢管理員資料
+		      function searchSaInfo() {
+			   const filter = document.getElementById("searchInput").value.toLowerCase();
+   const rows = document.querySelectorAll("#saTableBody tr");
+   rows.forEach(row => {
+       const saName = row.querySelector(".sa-name").value.toLowerCase();
+       const saEmail = row.querySelector(".sa-email").value.toLowerCase();
+       const saTel = row.querySelector(".sa-tel").value.toLowerCase();
+       const saStatus = row.querySelector(".sa-status").value;
+       // 判斷輸入的查詢字串是否在姓名、信箱、電話中
+       const match = saName.includes(filter) || saEmail.includes(filter) || saTel.includes(filter);
+       // 根據查詢結果顯示或隱藏該列
+       row.style.display = match ? "" : "none";
+   });
+}
+      // 載入管理員資料
+      function loadSaInfo() {
+          fetch("/saInfo/json")
+              .then(response => response.json())
+              .then(data => {
+                  const tableBody = document.getElementById("saTableBody");
+                  tableBody.innerHTML = "";
+                  data.forEach(sa => {
+                      const row = `
+                          <tr>
+                              <td>${sa.saId}</td>
+                              <td><input type="text" class="form-control sa-name" value="${sa.saName}"></td>
+                              <td><input type="email" class="form-control sa-email" value="${sa.saEmail}"></td>
+                              <td>
+                                  <div class="input-group sa-password-group">
+                                      <input type="password" class="form-control sa-password" value="${sa.saPassword}">
+                                      <button class="btn btn-outline-secondary" onclick="togglePasswordInput(this)">顯示密碼</button>
+                                  </div>
+                              </td>
+                              <td><input type="text" class="form-control sa-tel" value="${sa.saTel}"></td>
+                              <td>
+                                  <select class="form-select sa-status">
+                                      <option value="1" ${sa.saStatus == 1 ? 'selected' : ''}>帳號使用中</option>
+                                      <option value="2" ${sa.saStatus == 2 ? 'selected' : ''}>帳號已停權</option>
+                                  </select>
+                              </td>
+                              <td><button class="btn btn-success" onclick="saveSaChanges(${sa.saId}, this)">儲存</button></td>
+                          </tr>
+                      `;
+                      tableBody.insertAdjacentHTML("beforeend", row);
+                  });
+              })
+              .catch(error => {
+                  console.error("Error:", error);
+                  alert("無法載入管理員資料，請稍後再試。");
+              });
+      }
+      function addSa() {
+   const newSa = {
+       saName: document.getElementById("newSaName").value,
+       saEmail: document.getElementById("newSaEmail").value,
+       saPassword: document.getElementById("newSaPassword").value,
+       saTel: document.getElementById("newSaTel").value,
+       saStatus: document.getElementById("newSaStatus").value
+   };
+   fetch("/saInfo/add", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify(newSa)
+   })
+   .then(response => response.text())
+   .then(message => {
+       alert(message);
+       // 清空輸入欄位並重新載入資料
+       document.getElementById("newSaName").value = "";
+       document.getElementById("newSaEmail").value = "";
+       document.getElementById("newSaPassword").value = "";
+       document.getElementById("newSaTel").value = "";
+       document.getElementById("newSaStatus").value = "1";
+       loadSaInfo();
+   })
+   .catch(error => {
+       console.error("Error:", error);
+       alert("新增失敗，請稍後再試。");
+   });
+}
+      // 更新管理員資料
+      function saveSaChanges(saId, button) {
+          const row = button.closest("tr");
+          const saName = row.querySelector(".sa-name").value.trim();
+          const saEmail = row.querySelector(".sa-email").value.trim();
+          const saPassword = row.querySelector(".sa-password").value.trim();
+          const saTel = row.querySelector(".sa-tel").value.trim();
+          const saStatus = row.querySelector(".sa-status").value;
+          const updatedSa = { saId, saName, saEmail, saPassword, saTel, saStatus: parseInt(saStatus) };
+          fetch("/saInfo/update", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(updatedSa)
+          })
+          .then(response => response.text())
+          .then(message => {
+              alert(message);
+              loadSaInfo();
+          })
+          .catch(error => {
+              console.error("Error:", error);
+              alert("更新失敗，請稍後再試。");
+          });
+      }
+      // 切換密碼顯示/隱藏
+      function togglePasswordInput(button) {
+          const input = button.previousElementSibling;
+          input.type = input.type === "password" ? "text" : "password";
+          button.textContent = input.type === "password" ? "顯示密碼" : "隱藏密碼";
+      }
+      function togglePassword(inputId) {
+          const input = document.getElementById(inputId);
+          input.type = input.type === "password" ? "text" : "password";
+      }
+  </script>
+</body>
+</html>

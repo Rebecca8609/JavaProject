@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+    <meta charset="UTF-8">
+    <title>分類列表</title>
+</head>
+<body>
+
+<div th:replace="~{layout/saHeader}"></div>
+
+<div class="container-fluid" >
+    <div class="row justify-content-center">
+        <div class="col-10">
+            <h1>分類列表</h1>
+
+            <!-- 新增分類按鈕 -->
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                    data-bs-target="#addCategoryModal">新增分類</button>
+
+            <!-- 新增分類的模態框 -->
+            <div class="modal fade" id="addCategoryModal" tabindex="-1"
+                 aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addCategoryModalLabel">新增分類</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="category-form">
+                                <div>
+                                    <label for="category-name">分類名稱</label>
+                                    <input type="text" id="category-name" name="name" required class="form-control"/>
+                                </div>
+                                <div>
+                                    <label for="category-photos">分類照片</label>
+                                    <input type="file" id="category-photos" name="file" class="form-control"/>
+                                    <img id="category-photo-preview" src="" alt="圖片預覽"
+                                         style="width: 100px; height: 100px; display: none;"/>
+                                </div>
+                                <div>
+                                    <label for="category-desc">分類敘述(非必要)</label><br>
+                                    <textarea id="category-desc" name="desc" class="form-control"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-2">送出</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 編輯分類的模態框 -->
+            <div class="modal fade" id="editCategoryModal" tabindex="-1"
+                 aria-labelledby="editCategoryModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editCategoryModalLabel">編輯分類</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="edit-category-form">
+                                <input type="hidden" id="edit-category-id" name="categoryId">
+                                <div>
+                                    <label for="edit-category-name">分類名稱</label>
+                                    <input type="text" id="edit-category-name" name="name" required class="form-control"/>
+                                </div>
+                                <div>
+                                    <label for="edit-category-photos">分類照片</label>
+                                    <input type="file" id="edit-category-photos" name="file" class="form-control"/>
+                                    <img id="edit-category-photo-preview" src="" alt="圖片預覽"
+                                         style="width: 180px; height: 120px; display: none;"/>
+                                </div>
+                                <div>
+                                    <label for="edit-category-desc">分類敘述(非必要)</label><br>
+                                    <textarea id="edit-category-desc" name="desc" class="form-control"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-warning mt-2">更新</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="upload_result"></div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>分類ID</th>
+                        <th>分類名稱</th>
+                        <th>分類圖片</th>
+                        <th>分類說明</th>
+                        <th>動作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <th:block th:each="c : ${categoryList}">
+                        <tr>
+                            <td><p th:text="${c.categoryId}"></p></td>
+                            <td><p th:text="${c.categoryName}"></p></td>
+                            <td>
+                                <img th:src="'data:image/jpeg;base64,' + ${c.categoryPhoto}"
+                                     alt="分類圖片" width="180px" height="120px"/>
+                            </td>
+                            <td><p th:text="${c.categoryInfo}"></p></td>
+                            <td>
+                                <!-- 編輯按鈕 -->
+                                <button type="button" class="btn btn-warning btn-sm"
+                                        onclick="openEditCategoryModal(${c.categoryId})">編輯</button>
+                                <!-- 刪除按鈕 -->
+                                <button type="button" class="btn btn-danger btn-sm"
+                                        onclick="deleteCategory(${c.categoryId})">刪除</button>
+                            </td>
+                        </tr>
+                    </th:block>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// 顯示新增分類模態框
+const submitForm = document.getElementById("category-form");
+
+submitForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    let formData = new FormData(submitForm);
+
+    // 新增分類
+    axios.post("http://localhost:8080/api/category/addPost", formData)
+        .then((response) => {
+            document.getElementById("upload_result").innerText = response.data;
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
+            modal.hide();  // 關閉模態框
+
+            // 手動清除模態框背景
+            document.querySelector('.modal-backdrop')?.remove(); // 移除背後的暗色遮罩
+            // 恢復 body 滾動
+            document.body.style.overflow = '';  // 恢復頁面滾動
+
+            loadCategoryList(); // 重新載入分類列表
+        })
+        .catch((error) => {
+            document.getElementById("upload_result").innerText = "上傳失敗";
+            console.error(error);
+        });
+});
+
+// 編輯分類模態框
+function openEditCategoryModal(categoryId) {
+    axios.get(`http://localhost:8080/api/category/${categoryId}`)
+        .then(response => {
+            const category = response.data;
+            // 設置表單內容
+            document.getElementById('edit-category-id').value = category.categoryId;
+            document.getElementById('edit-category-name').value = category.categoryName;
+            document.getElementById('edit-category-desc').value = category.categoryInfo;
+            // 顯示圖片預覽
+            if (category.categoryPhoto) {
+                document.getElementById('edit-category-photo-preview').style.display = "block";
+                document.getElementById('edit-category-photo-preview').src = 'data:image/jpeg;base64,' + category.categoryPhoto;
+            } else {
+                document.getElementById('edit-category-photo-preview').style.display = "none";
+            }
+            // 顯示編輯模態框
+            const modal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error("無法載入分類資料:", error);
+        });
+}
+
+// 提交編輯表單
+const editSubmitForm = document.getElementById("edit-category-form");
+
+editSubmitForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    let formData = new FormData(editSubmitForm);
+    const categoryId = document.getElementById('edit-category-id').value;
+
+    // 更新分類
+    axios.put(`http://localhost:8080/api/category/update/${categoryId}`, formData)
+        .then((response) => {
+            document.getElementById("upload_result").innerText = "更新成功!";
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editCategoryModal'));
+            modal.hide();  // 關閉模態框
+
+            // 手動清除模態框背景
+            document.querySelector('.modal-backdrop')?.remove(); // 移除背後的暗色遮罩
+            // 恢復 body 滾動
+            document.body.style.overflow = '';  // 恢復頁面滾動
+
+            loadCategoryList(); // 重新載入分類列表
+        })
+        .catch((error) => {
+            document.getElementById("upload_result").innerText = "更新失敗";
+            console.error(error);
+        });
+});
+
+// 刪除分類
+function deleteCategory(categoryId) {
+    if (confirm("確定刪除此分類?")) {
+        axios.delete(`http://localhost:8080/api/category/delete/${categoryId}`)
+            .then(response => {
+                document.getElementById("upload_result").innerText = "刪除成功!";
+                loadCategoryList();  // 重新載入列表
+            })
+            .catch(error => {
+                document.getElementById("upload_result").innerText = "刪除失敗";
+                console.error(error);
+            });
+    }
+}
+
+// 重新載入分類列表
+function loadCategoryList() {
+    axios.get("http://localhost:8080/api/category/list")
+        .then((response) => {
+            const tbody = document.querySelector("tbody");
+            tbody.innerHTML = response.data.map((c) => `
+                <tr>
+                    <td>${c.categoryId}</td>
+                    <td>${c.categoryName}</td>
+                    <td>
+                        <img alt="無法顯示" height="120px" width="180px" src="/api/category/photo?id=${c.categoryId}">
+                    </td>
+                    <td>${c.categoryInfo}</td>
+                    <td>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="openEditCategoryModal(${c.categoryId})">編輯</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteCategory(${c.categoryId})">刪除</button>
+                    </td>
+                </tr>
+            `).join('');
+        })
+        .catch((error) => {
+            console.error("無法載入分類列表:", error);
+        });
+}
+
+loadCategoryList();
+
+</script>
+
+</body>
+</html>

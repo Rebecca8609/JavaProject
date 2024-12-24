@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CKEditor 範例</title>
+    <script src="https://cdn.ckeditor.com/4.21.0/full/ckeditor.js"></script>
+</head>
+<body>
+    <h1>CKEditor 範例</h1>
+    <form id="contentForm" action="/save-content" method="POST" enctype="multipart/form-data">
+        <textarea name="content" id="editor"></textarea>
+        <button type="submit">提交</button>
+    </form>
+
+    <script>
+        CKEDITOR.replace('editor', {
+            filebrowserUploadUrl: '/upload-image', // 後端圖片上傳的接口
+            filebrowserUploadMethod: 'form'
+        });
+
+        // 在提交時同步 CKEditor 的內容到 <textarea>
+        document.getElementById('contentForm').addEventListener('submit', function (e) {
+            const editorData = CKEDITOR.instances.editor.getData();
+            document.querySelector('textarea[name="content"]').value = editorData;
+        });
+    </script>
+</body>
+</html>

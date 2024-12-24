@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>saHeader</title>
+    
+    <!-- Bootstrap CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <!-- Cropper.js CSS -->
+    <link href="https://unpkg.com/cropperjs/dist/cropper.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <!-- 標誌 (Logo) -->
+                <a class="navbar-brand btn btn-warning text-black me-3" th:href="@{/}">
+                    CHKWGame
+                </a>
+                
+                <!-- 響應式切換按鈕 -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" 
+                        aria-controls="navbarContent" aria-expanded="false" aria-label="切換導航">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <!-- 導航內容 -->
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                        <!-- 人員資料管理下拉選單 -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="personnelDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                人員資料管理
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="personnelDropdown">
+                                <li><a class="dropdown-item" th:href="@{/saInfo}">員工總覽</a></li>
+                                <li><a class="dropdown-item" th:href="@{/userInfo}">會員總覽</a></li>
+                            </ul>
+                        </li>
+                        
+                        <!-- 商城頁面管理下拉選單 -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="storePageDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                商城頁面管理
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="storePageDropdown">
+                                <li><a class="dropdown-item" th:href="@{/adInfo}">廣告總覽</a></li>
+                                <li><a class="dropdown-item" th:href="@{/category/list}">商品樣式總覽</a></li>
+                                <li><a class="dropdown-item" th:href="@{/brand/list}">商品品牌總覽</a></li>
+                            </ul>
+                        </li>
+                        
+                        <!-- 商品管理下拉選單 -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="productManagementDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                商品管理
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="productManagementDropdown">
+                                <li><a class="dropdown-item" th:href="@{/item/itemList}">商品資訊總覽</a></li>
+                                <li><a class="dropdown-item" th:href="@{/}">訂單總覽</a></li>
+                                <li><a class="dropdown-item" th:href="@{/review/reviewManagement}">評論總覽</a></li>
+                                <li><a class="dropdown-item" th:href="@{/}">客服表單總覽</a></li>
+                                <li><a class="dropdown-item" th:href="@{/}">FAQ總覽</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <!-- 登出按鈕 -->
+                    <div class="d-flex">
+                        <button type="button" class="btn btn-outline-light me-2">登出</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 引入必要的 JavaScript 文件 -->
+    <!-- Popper.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.7/umd/popper.min.js" crossorigin="anonymous"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <!-- 其他 JS 文件 -->
+    <script th:src="@{/js/axios.min.js}"></script>
+</body>
+</html>

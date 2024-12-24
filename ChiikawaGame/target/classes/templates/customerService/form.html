@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-hant-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>客服表單</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+
+    <style>
+        body {
+    background-color: white;
+    color: black;
+  }
+  
+  .container-gray {
+    background-color: #dee2e6;
+    max-width: 1140px; /* 限制最大寬度 */
+    padding: 20px;
+    margin: 0 auto; /* 讓灰色區域居中 */
+  }
+  
+  .form-contact {
+    max-width: 900px; /* 調整白色區域的最大寬度 */
+    padding: 15px;
+    margin: 20px auto;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .form-contact h1 {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .form-contact input,
+  .form-contact select,
+  .form-contact textarea {
+    background-color: #ffffff;
+    border: 1px solid black; /* 添加黑色邊框 */
+    color: black;
+    border-radius: 5px; /* 可選，讓邊框帶點圓角 */
+    padding: 8px; /* 增加內部間距，讓輸入區域更舒適 */
+  }
+  
+  .form-contact input::placeholder,
+  .form-contact textarea::placeholder {
+    color: #6c757d;
+  }
+  
+  .form-contact label {
+    color: #495057;
+  }
+  
+  .btn-warning {
+    background-color: #ffc107;
+    color: black;
+    border: none;
+  }
+    </style>
+</head>
+<body class="text-center">
+    <!-- header -->
+    <div id="header-container"></div>
+
+    <!-- 聯絡我們區塊 -->
+    <div class="container-gray">
+        <main class="form-contact">
+            <form id="contactForm">
+                <h1 class="h3 mb-3 fw-normal">聯絡我們</h1>
+
+                <!-- 問題分類 -->
+                <div class="form-floating mb-3">
+                    <select class="form-select" id="questionCategory" required>
+                        <option value="" selected disabled>選擇問題分類</option>
+                        <option value="general">一般問題</option>
+                        <option value="technical">技術支援</option>
+                        <option value="billing">帳單問題</option>
+                    </select>
+                    <label for="questionCategory">問題分類</label>
+                </div>
+
+                <!-- 問題標題 -->
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="questionTitle" placeholder="輸入問題標題 (30字以內)" maxlength="30" required>
+                    <label for="questionTitle">輸入問題標題 (30字以內)</label>
+                </div>
+
+                <!-- 問題內容 -->
+                <div class="form-floating mb-3">
+                    <textarea class="form-control" id="questionContent" placeholder="輸入問題內容 (300字以內)" maxlength="300" style="height: 150px;" required></textarea>
+                    <label for="questionContent">輸入問題內容 (300字以內)</label>
+                </div>
+
+                <button class="w-100 btn btn-lg btn-warning" type="submit">提交</button>
+            </form>
+        </main>
+    </div>
+
+    <!-- 感謝消息區域 -->
+    <div id="thankYouMessage" style="display: none; color: green; margin-top: 20px;">
+        感謝您的提交！我們會儘快與您聯繫。
+    </div>
+
+    <!-- footer -->
+    <div id="footer-container"></div>
+
+    <!-- script -->
+    <div th:replace="~{Customer_Service/html/footer}"></div>
+
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+
+    <script>
+$(document).ready(function() {
+  $('#contactForm').on('submit', function(e) {
+      e.preventDefault();
+
+      const category = $('#questionCategory').val();
+      const title = $('#questionTitle').val();
+      const content = $('#questionContent').val();
+
+      if (!category || !title || !content) {
+          alert("請填寫所有欄位！");
+          return;
+      }
+
+      $.post("http://localhost:8081/tw/customer_service/CS_form/CSFormServlet", {
+          CSFormSort: category, // 改成和 Servlet 中匹配的名稱
+          CSFormTitle: title,
+          CSFormContent: content,
+          action: 'contact'
+      })
+      .done(function(data) {
+          alert("提交成功！");
+          $('#contactForm')[0].reset();
+          $('#thankYouMessage').show(); // 顯示感謝訊息
+      })
+      .fail(function(xhr, status, error) {
+          alert("提交失敗: " + error);
+      });
+  });
+});
+    </script>
+    
+</body>
+</html>

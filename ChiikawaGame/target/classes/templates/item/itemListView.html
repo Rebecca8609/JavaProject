@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+<meta charset="UTF-8">
+<title>商品列表</title>
+</head>
+<body>
+	<div th:replace="~{layout/saHeader}"></div>
+	<div class="container-fluid col-10">
+		<h1>商品列表</h1>
+		<!-- 新增商品按鈕 -->
+		<button type="button" class="btn btn-primary mb-3"
+			th:onclick="|window.location.href='/item/addItem'|">新增商品</button>
+
+		<!-- 搜尋區域 -->
+		<div class="d-flex mb-3">
+			<input type="text" id="item-search" class="form-control"
+				placeholder="搜尋商品名稱...">
+		</div>
+
+		<!-- 商品表格 -->
+		<table class="table">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>名稱</th>
+					<th>圖片</th>
+					<th>價格</th>
+					<th>賣家ID</th>
+					<th>分類</th>
+					<th>品牌</th>
+					<th>建立日期</th>
+					<th>到期日</th>
+					<th>狀態</th>
+					<th>動作</th>
+				</tr>
+			</thead>
+			<tbody>
+				<th:block th:each="i : ${itemList}">
+					<tr>
+						<td><p th:text="${i.itemId}"></p></td>
+						<td><p th:text="${i.itemName}"></p></td>
+						<td><img th:if="${!i.itemPhoto.isEmpty()}"
+							th:src="@{/item/photo(id=${i.itemPhoto[0].id})}" alt="商品圖片"
+							width="100" height="100" />
+							<p th:if="${i.itemPhoto.isEmpty()}">無圖片</p></td>
+
+						<td><p th:text="${i.itemPrice}"></p></td>
+						<td><p th:text="${i.userInfo.userId}"></p></td>
+						<td><p th:text="${i.category.categoryName}"></p></td>
+						<td><p th:text="${i.brand.brandName}"></p></td>
+						<td><p th:text="${i.itemDate}"></p></td>
+						<td><p th:text="${i.itemDue}"></p></td>
+						<td th:text="${i.itemDeleteStatus ? '已刪除' : '未刪除'}"></td>
+						<td><a class="btn btn-warning"
+							th:href="@{/item/editItem(id=${i.itemId})}">編輯</a>
+							<button class="btn btn-danger"
+								th:onclick="|if(confirm('確定刪除？')) window.location.href='/item/deleteItem?id=' + ${i.itemId};|">
+								刪除</button></td>
+					</tr>
+				</th:block>
+			</tbody>
+		</table>
+	</div>
+	<script>
+    // 搜尋功能
+    const searchInput = document.getElementById("item-search");
+    searchInput.addEventListener("input", function () {
+        const searchQuery = searchInput.value.toLowerCase();
+        const rows = document.querySelectorAll("tbody tr");
+        rows.forEach(row => {
+            const itemName = row.cells[1].textContent.toLowerCase();
+            row.style.display = itemName.includes(searchQuery) ? "" : "none";
+        });
+    });
+	</script>
+</body>
+</html>

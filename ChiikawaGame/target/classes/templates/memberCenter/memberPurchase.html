@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>我的會員中心</title>
+    <!-- Import Bootstrap CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/custom.css}" rel="stylesheet">
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/jquery.min.js}"></script>
+    <style>
+        
+        #mainContent {
+            width: 70%;
+            max-width: 1400px;
+            min-width: 900px;
+            margin: 0 auto;
+            padding: 32px;
+            border-radius: 10px;
+        }
+
+        .form-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .btn-custom {
+            height: 50px;
+            width: 100%;
+            font-size: 1.2rem;
+        }
+
+        /* 標籤欄 */
+        .nav-tabs .nav-link {
+            color: #007bff;
+            font-weight: bold;
+            padding: 10px 15px;
+            border: none;
+            background-color: transparent;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #fff;
+            background-color: #007bff;
+            border-radius: 5px;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: #fff;
+            background-color: #007bff;
+            border-radius: 5px;
+        }
+
+        .tabs-container {
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        /* 搜尋欄 */
+        .search-bar {
+            margin: 20px 0;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- 引入 userHeader -->
+    <div th:replace="~{layout/userHeader}"></div>
+
+    <!-- Flexbox -->
+    <div class="d-flex" style="height: 100vh;">
+        <!-- 引入側邊欄 -->
+        <div th:replace="~{layout/memberCenterSidebar}"></div>
+
+        <!-- 主要內容 -->
+        <div id="mainContent" class="p-4">
+            <h2 class="form-title">購買清單</h2>
+
+            <!-- 標籤欄 -->
+            <div class="tabs-container">
+                <ul class="nav nav-tabs justify-content-center" id="orderTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="allTab" href="#" onclick="selectTab('all')">全部</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="pendingPaymentTab" href="#" onclick="selectTab('pendingPayment')">待付款</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="pendingShipmentTab" href="#" onclick="selectTab('pendingShipment')">待出貨</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="pendingReceiptTab" href="#" onclick="selectTab('pendingReceipt')">待收貨</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="completedTab" href="#" onclick="selectTab('completed')">已完成</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="canceledTab" href="#" onclick="selectTab('canceled')">取消</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="refundTab" href="#" onclick="selectTab('refund')">退貨/退款</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 搜尋欄位 -->
+            <div class="search-bar text-center">
+                <input type="text" id="searchInput" class="form-control search-input" placeholder="搜尋訂單內容、編號或商品名稱">
+            </div>
+
+            <!-- 購物清單內容 -->
+            <div id="contentArea">
+                <div class="container mb-4 bg-light p-4 rounded">
+    				<!-- 賣家資訊 -->
+    				<div class="d-flex justify-content-between align-items-center border-bottom py-2">
+				        <div>
+				            <a href="#" class="text-dark fw-bold">松梅桌遊專賣店</a>
+				        </div>
+				        <div class="text-end">
+				            <span class="badge bg-info">買家取件成功</span>
+				            <span class="badge bg-success">已完成</span>
+					        </div>
+				    </div>
+
+ 				   <!-- 商品列表 -->
+					    <div class="border-bottom py-3">
+					    <a href="#" class="d-block text-decoration-none text-dark">
+					        <div class="d-flex align-items-start mb-3">
+					            <img src="https://via.placeholder.com/80" alt="商品圖片" class="me-3 rounded">
+					            <div class="flex-grow-1">
+				                <h6 class="mb-1">松梅桌遊舖 多款 Ultra PRO 球員卡 收藏卡夾</h6>
+					                <p class="text-muted">規格：塑膠保護膜10張/包</p>
+					            </div>
+					            <div class="text-end">
+				                <p>單價：<strong>$15</strong></p>
+				                <p>數量：<strong>x3</strong></p>
+					            </div>
+					        </div></a>
+
+				        <!-- 額外商品列 -->
+				        <a href="#" class="d-block text-decoration-none text-dark">
+ 					       <div class="d-flex align-items-start mb-3">
+ 				           <img src="https://via.placeholder.com/80" alt="商品圖片" class="me-3 rounded">
+            				<div class="flex-grow-1">
+                				<h6 class="mb-1">松梅桌遊舖 日本製 未拆封單卡 補充包 PSA</h6>
+                				<p class="text-muted">規格：綠色 S 款</p>
+            				</div>
+            				<div class="text-end">
+                				<p>單價：<strong>$230</strong></p>
+                				<p>數量：<strong>x2</strong></p>
+            				</div>
+        				</div></a>
+    				</div>
+
+    				<!-- 訂單總額/操作按鈕 -->
+    				<div class="d-flex flex-column align-items-end py-3">
+        				<h5 class="text-danger mb-3">訂單總額：$505</h5>
+        				<div class="d-flex">
+            				<button class="btn btn-outline-primary me-2">再買一次</button>
+            				<button class="btn btn-outline-secondary me-2">聯絡賣家</button>
+            				<button class="btn btn-outline-success">查看評價</button>
+        				</div>
+    				</div>
+				</div>
+            </div>		
+        </div>
+    	</div>
+
+    <script>
+        function selectTab(tabId) {
+            // 移除所有標籤的 'active' 類別
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // 為點擊的標籤添加 'active' 類別
+            document.getElementById(`${tabId}Tab`).classList.add('active');
+
+            // 更新內容區域
+            const contentArea = document.getElementById('contentArea');
+            switch (tabId) {
+                case 'all':
+                    contentArea.innerHTML = '<p>顯示所有清單。</p>';
+                    break;
+                case 'pendingPayment':
+                    contentArea.innerHTML = '<p>顯示待付款清單。</p>';
+                    break;
+                case 'pendingShipment':
+                    contentArea.innerHTML = '<p>顯示待出貨清單。</p>';
+                    break;
+                case 'pendingReceipt':
+                    contentArea.innerHTML = '<p>顯示待收貨清單。</p>';
+                    break;
+                case 'completed':
+                    contentArea.innerHTML = '<p>顯示已完成清單。</p>';
+                    break;
+                case 'canceled':
+                    contentArea.innerHTML = '<p>顯示取消清單。</p>';
+                    break;
+                case 'refund':
+                    contentArea.innerHTML = '<p>顯示退貨/退款清單。</p>';
+                    break;
+                default:
+                    contentArea.innerHTML = '<p>這裡將顯示您的清單內容。</p>';
+                    break;
+            }
+        }
+
+        
+    </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<html xmlns:th="http://www.thymeleaf.org"></html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <title>EC Pay Checkout</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="container mt-5">
+    <h1 class="mb-4">EC Pay 結帳</h1>
+
+    <!-- 送貨方式 -->
+    <div class="mb-3">
+        <label for="" class="form-label">送貨方式</label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="deliveryMethod" id="homeDelivery" value="宅配" checked>
+            <label class="form-check-label" for="homeDelivery">宅配</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="deliveryMethod" id="storePickup" value="超商取貨">
+            <label class="form-check-label" for="storePickup">超商取貨 (7-11)</label>
+        </div>
+    </div>
+
+    <!-- 付款方式 -->
+    <div class="mb-3">
+        <label for="" class="form-label">付款方式</label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="paymentMethod" id="ecpay" value="綠界支付">
+            <label class="form-check-label" for="ecpay">綠界支付</label>
+        </div>
+    </div>
+    
+    <!-- 假設有 orderId (可以從前端動態獲得，這裡用固定值示範) -->
+    <input type="hidden" id="orderId" value="9" /> <!-- 這裡假設訂單 ID 是 12345 -->
+    <input type="hidden" id="totalAmount" value="10000" />
+
+    <!-- 提交按鈕 -->
+    <div>
+        <button class="btn btn-primary" id="checkoutButton">前往結帳</button>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="js/bootstrap.bundle.min.js"></script>
+
+    <!-- AJAX 請求 -->
+    <script>
+        $(document).ready(function() {
+            $('#checkoutButton').click(function() {
+                // 取得訂單 ID 和總金額
+                const orderId = $('#orderId').val();
+                const totalAmount = $('#totalAmount').val();
+
+                // 發送 AJAX 請求
+                $.ajax({
+                    url: '/ecpay/submitOrder', 
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ 
+                        orderId: orderId,
+                        totalAmount: totalAmount 
+                    }),
+                    success: function(response) {
+                        // 創建一個隱藏的 div 來放置表單
+                        const formContainer = $('<div>').html(response);
+                        $('body').append(formContainer);
+
+                        // 找到綠界回傳的表單
+                        const form = formContainer.find('form');
+                        if (form.length > 0) {
+                            // 自動提交表單到綠界
+                            form.submit();
+                        } else {
+                            alert('未找到支付表單！');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('錯誤:', error);
+                        alert('伺服器錯誤，請稍後再試！');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

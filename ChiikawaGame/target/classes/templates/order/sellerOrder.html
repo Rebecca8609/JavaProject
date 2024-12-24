@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>賣家訂單管理</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/custom.css}" rel="stylesheet">
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/jquery.min.js}"></script>
+    <script th:src="@{/js/axios.min.js}"></script>
+</head>
+<body>
+    <!-- 導覽行 -->
+    <header th:replace="::saHeader"></header>
+
+    <main class="container my-4">
+        <h1 class="mb-4 text-center">賣家訂單管理</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>訂單編號</th>
+                    <th>買家姓名</th>
+                    <th>商品名稱</th>
+                    <th>數量</th>
+                    <th>金額</th>
+                    <th>物流狀態</th>
+                    <th>物流追蹤號</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="seller-orders">
+                <!-- 動態生成賣家訂單 -->
+            </tbody>
+        </table>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sellerOrdersTable = document.getElementById('seller-orders');
+
+            // 從後端獲取賣家的訂單數據
+            axios.get('/api/seller/orders')
+                .then(response => {
+                    const orders = response.data;
+                    orders.forEach(order => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${order.orderId}</td>
+                            <td>${order.buyerName}</td>
+                            <td>${order.itemName}</td>
+                            <td>${order.quantity}</td>
+                            <td>$${order.totalPrice.toFixed(2)}</td>
+                            <td>
+                                <select class="form-select order-status" data-order-id="${order.orderId}">
+                                    <option value="Pending" ${order.shippingStatus === 'Pending' ? 'selected' : ''}>待處理</option>
+                                    <option value="Shipped" ${order.shippingStatus === 'Shipped' ? 'selected' : ''}>已出貨</option>
+                                    <option value="Delivered" ${order.shippingStatus === 'Delivered' ? 'selected' : ''}>已送達</option>
+                                </select>
+                            </td>
+                            <td>${order.trackingNumber || '無追蹤號'}</td>
+                            <td>
+                                <button class="btn btn-primary update-status-btn" data-order-id="${order.orderId}">
+                                    更新狀態
+                                </button>
+                                <button class="btn btn-secondary view-details-btn" data-order-id="${order.orderId}">
+                                    查看詳情
+                                </button>
+                            </td>
+                        `;
+                        sellerOrdersTable.appendChild(row);
+                    });
+
+                    // 綁定更新狀態按鈕
+                    document.querySelectorAll('.update-status-btn').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const orderId = event.target.getAttribute('data-order-id');
+                            const status = document.querySelector(`.order-status[data-order-id="${orderId}"]`).value;
+                            axios.patch(`/api/orders/${orderId}/status`, { status })
+                                .then(() => {
+                                    alert('物流狀態已更新');
+                                })
+                                .catch(error => {
+                                    console.error(error);
+                                    alert('更新失敗');
+                                });
+                        });
+                    });
+
+                    // 綁定查看詳情按鈕
+                    document.querySelectorAll('.view-details-btn').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const orderId = event.target.getAttribute('data-order-id');
+                            window.location.href = `/seller/orders/${orderId}`;
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('無法加載訂單', error);
+                });
+        });
+    </script>
+</body>
+</html>

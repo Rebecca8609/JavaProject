@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-hant-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>客服中心</title>
+
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+.header-btn {
+    background-color: #ffc107;
+    color: black;
+    border-radius: 0.25rem;
+}
+
+.header-btn:hover {
+    background-color: #e0a800;
+}
+
+input[type="text"], textarea {
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 5px;
+}
+
+input[type="text"]:focus, textarea:focus {
+    border-color: #80bdff;
+    outline: none;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+</style>
+
+</head>
+<body>
+
+    <div th:replace="~{Customer_Service/html/saHeader}"></div>
+
+<h1 class="text-center">
+    <span class="btn header-btn" style="font-size: 25px;">Q&A管理頁面</span>
+</h1>
+
+<div class="mb-3">
+    <label for="searchInput" class="form-label">查詢Q&A</label> 
+    <input type="text" id="searchInput" class="form-control" placeholder="輸入Q&A資訊來查詢" onkeyup="searchForums()">
+</div>
+
+<table id="data-table">
+    <thead>
+        <tr>
+            <th>分類</th>
+            <th>標題</th>
+            <th>內容</th>
+            <th>上架</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><input type="text" value="分類名稱" id="sort-1"></td>
+            <td><input type="text" value="標題名稱" id="title-1"></td>
+            <td><textarea id="content-1">內容文字</textarea></td>
+            <td>
+                <select id="status-1">
+                    <option value="上架">上架</option>
+                    <option value="下架">下架</option>
+                </select>
+            </td>
+            <td>
+                <button onclick="saveChanges(1)">儲存</button>
+                <button onclick="deleteItem(1)">上架</button>
+                <button onclick="deleteItem(1)">下架</button>
+            </td>
+        </tr>
+        <tbody id="QATablebody"></tbody>
+    </tbody>
+</table>
+
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="successModalLabel">提示</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalMessage"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{Customer_Service/html/footer}"></div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+
+<script>
+    // 初始化頁面時載入表單資料
+    document.addEventListener("DOMContentLoaded", loadCSQAData);
+    
+    // 查詢表單資料
+    function searchCSQAData() {
+        const filter = document.getElementById("searchInput").value.toLowerCase();
+        const rows = document.querySelectorAll("#QATablebody tr");
+        
+        rows.forEach(row => {
+            const CSQADataTitle = row.cells[2].textContent.toLowerCase();  // 取得標題
+            const CSQADataid = row.cells[0].textContent.toLowerCase();  // 取得表單ID
+            
+            // 根據表單ID或標題過濾資料
+            const match = CSQADataTitle.includes(filter) || CSQADataid.includes(filter);
+            row.style.display = match ? "" : "none";  // 顯示或隱藏符合條件的行
+        });
+    }
+    
+    // 載入表單資料
+    function loadCSQAData() {
+        fetch("/QA_manage/json")  // 假設這是您後端的 API 端點
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.querySelector("#QATablebody tbody");
+                tableBody.innerHTML = "";  // 清空現有的表格內容
+    
+                data.forEach(form => {
+                    const row = `
+                        <tr>
+                            <td>${form.CSQADataid}</td>
+                            <td>${form.CSQADataSort}</td>
+                            <td>${form.CSQADataTitle}</td>
+                            <td>${form.CSQADataContent}</td>
+                            <td>${form.CSQADataDate}</td>
+                            <td>${form.CSQADataChack === 0 ? '未審核' : '已發布'}</td>
+                        </tr>
+                    `;
+                    tableBody.insertAdjacentHTML("beforeend", row);  // 將新行加入表格
+                });
+            })
+            .catch(error => {
+                console.error("載入表單資料錯誤：", error);
+                alert("無法載入表單資料，請稍後再試。");
+            });
+    }
+    </script>
+
+</body>
+</html>

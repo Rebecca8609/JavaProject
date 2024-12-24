@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商城首頁</title>
+
+<!-- 引入 Bootstrap CSS -->
+<link href="/css/bootstrap.min.css" rel="stylesheet">
+<link href="/css/custom.css" rel="stylesheet">
+<script src="/js/bootstrap.bundle.min.js"></script>
+<script src="/js/jquery.min.js"></script>
+
+<!-- 內嵌 CSS 樣式 -->
+<style>
+
+.main-content {
+    padding-top: 80px; /* 根據 Header 的高度進行調整 */
+    background-color: #ffffff; /* 主內容背景色 */
+}
+
+.carousel-item {
+	height: 433px;
+}
+
+.carousel-container {
+	width: 100%; /* 設定廣告牆寬度 */
+	margin: 0 auto; /* 水平置中 */
+	overflow: hidden; /* 避免內容超出容器範圍 */
+	border-radius: 8px; /* 增加圓角讓設計更美觀 */
+	position: relative; /* 確保內容與按鈕在正確範圍 */
+}
+
+.carousel-inner img {
+	width: 100%; /* 讓圖片寬度填滿容器 */
+	height: 433px; /* 固定高度 */
+	object-fit: cover; /* 確保圖片比例適應且不會超出容器 */
+	border-radius: 8px; /* 讓圖片也符合容器圓角 */
+}
+
+.gray-placeholder {
+	background-color: #d3d3d3;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 8px;
+}
+
+.section-container {
+	background-color: #f8f9fa;
+	border-radius: 10px;
+	padding: 10px;
+}
+
+h3 {
+	margin-bottom: 15px;
+}
+
+.category-grid {
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	gap: 15px;
+	padding: 10px;
+	justify-content: center;
+}
+
+.category-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	border-radius: 8px;
+	padding: 10px;
+	background-color: #fff;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+	text-decoration: none;
+	color: inherit;
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.category-item .gray-placeholder {
+	height: 120px;
+	width: 100%;
+	border-radius: 8px;
+}
+
+.category-name {
+	margin-top: 10px;
+	font-size: 1.1em;
+	color: #555;
+}
+
+.category-item:hover {
+	transform: scale(1.05);
+	box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+	background-color: #f5f5f5; /* 可選：懸停時背景色變化 */
+}
+
+.latest-product-grid {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 15px;
+	padding: 10px;
+	justify-content: center;
+}
+
+.product-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	background-color: #fff;
+	border-radius: 8px;
+	padding: 10px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+	transition: transform 0.2s, box-shadow 0.2s;
+	text-decoration: none;
+	color: #333;
+	height: 280px; /* 統一卡片高度 */
+}
+
+.product-item img {
+    width: 180px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block; /* 確保圖片是塊級元素 */
+    margin: 0 auto; /* 水平居中 */
+    
+}
+
+.product-item:hover {
+	transform: scale(1.05);
+	box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.product-info {
+	text-align: center;
+	margin-top: 10px;
+	max-width: 150px; /* 限制最大寬度 */
+}
+
+.product-name {
+	font-size: 1.1em;
+	color: #333;
+	display: -webkit-box;
+	-webkit-line-clamp: 2; /* 限制顯示最多2行 */
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: auto; /* 自適應高度 */
+	max-width: 150px; /* 最大寬度，根據設計需求調整 */
+}
+
+.product-price {
+	font-size: 1.2em;
+	font-weight: bold;
+	color: #e74c3c;
+	margin-top: 5px;
+}
+
+.custom-login-button {
+	background-color: #ffd700;
+	color: #000;
+	border: 2px solid #000;
+	border-radius: 8px;
+	transition: background-color 0.2s, color 0.2s;
+}
+
+.custom-login-button:hover {
+	background-color: #ffcc00;
+	color: #333;
+}
+</style>
+</head>
+<body>
+	<div th:replace="~{layout/userHeader}"></div>
+	
+	<div class="main-content">
+	<div class="container my-4">
+		<div class="carousel-container">
+			<div id="carouselExampleIndicators" class="carousel slide mb-4"
+				data-bs-ride="carousel">
+				<div class="carousel-indicators" id="carouselIndicators"></div>
+				<div class="carousel-inner" id="carouselInner"></div>
+				<button class="carousel-control-prev" type="button"
+					data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+					<span class="carousel-control-prev-icon"></span>
+				</button>
+				<button class="carousel-control-next" type="button"
+					data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+					<span class="carousel-control-next-icon"></span>
+				</button>
+			</div>
+		</div>
+
+		<section class="section-container my-4">
+			<h3 class="text-center">品牌分類</h3>
+			<div id="brand-grid" class="category-grid"></div>
+		</section>
+
+		<section class="section-container my-4">
+			<h3 class="text-center">最新商品</h3>
+			<div id="latest-products" class="latest-product-grid"></div>
+			<div class="text-end mt-3">
+				<a href="/itemSearch" class="text-decoration-none">更多商品 &raquo;</a>
+		</section>
+	</div>
+	</div>
+
+	<!-- JavaScript -->
+
+
+	<script>
+	 // 載入廣告圖片
+    function loadAdCarousel() {
+        fetch("/adInfo/json")
+            .then(response => response.json())
+            .then(data => {
+                const carouselIndicators = document.getElementById("carouselIndicators");
+                const carouselInner = document.getElementById("carouselInner");
+
+                // 清空輪播圖內容
+                carouselIndicators.innerHTML = "";
+                carouselInner.innerHTML = "";
+
+                data.forEach((ad, index) => {
+                    // 動態生成指示點
+                    const indicator = `<button type="button" data-bs-target="#carouselExampleIndicators" 
+                                           data-bs-slide-to="${index}" 
+                                           ${index === 0 ? 'class="active" aria-current="true"' : ''}></button>`;
+                    carouselIndicators.insertAdjacentHTML("beforeend", indicator);
+
+                    // 動態生成輪播圖項目
+                    const carouselItem = `
+    <div class="carousel-item ${index === 0 ? 'active' : ''}">
+        <img src="data:image/jpeg;base64,${ad.adImageBase64}" class="d-block w-100" alt="${ad.adName}">
+    </div>`;
+carouselInner.insertAdjacentHTML("beforeend", carouselItem);
+                });
+            })
+            .catch(error => {
+                console.error("無法載入廣告資料：", error);
+            });
+    }
+
+    // 在頁面載入時初始化輪播圖
+    document.addEventListener("DOMContentLoaded", loadAdCarousel);
+	
+    // 輔助函數：截斷文字並加上省略號
+function truncateText(text, maxLength) {
+    if (text.length > maxLength) {
+        return text.substring(0, maxLength) + "...";
+    }
+    return text;
+}
+
+
+
+// 載入品牌資料並生成品牌卡
+function loadBrandCards() {
+    fetch("/brands")
+        .then(response => response.json())
+        .then(data => {
+            const brandGrid = document.getElementById("brand-grid");
+            brandGrid.innerHTML = ""; // 清空現有內容
+
+            data.forEach(brand => {
+                const brandCard = `
+                    <a href="/itemSearch?keyword=${encodeURIComponent(brand.brandName)}" class="category-item">
+                        <div class="gray-placeholder">
+                            <img src="${brand.brandPhoto || '/images/default.jpg'}" class="img-fluid rounded" alt="${brand.brandName}">
+                        </div>
+                        <div class="category-name">${brand.brandName}</div>
+                    </a>
+                `;
+                brandGrid.insertAdjacentHTML("beforeend", brandCard);
+            });
+        })
+        .catch(error => {
+            console.error("無法載入品牌資料：", error);
+        });
+}
+
+// 頁面載入時執行
+document.addEventListener("DOMContentLoaded", loadBrandCards);
+
+
+
+// 載入最新商品
+// 輔助函數：截斷文字並強制加上省略號
+function truncateText(text, maxLength) {
+    if (text.length > maxLength) {
+        return text.substring(0, maxLength) + "...";
+    }
+    return text; // 不超過字數時，維持原文字
+}
+
+// 格式化價格為帶千位分隔符號
+function formatPrice(price) {
+    return new Intl.NumberFormat('zh-TW', {
+        style: 'currency',
+        currency: 'TWD',
+        minimumFractionDigits: 0 // 不顯示小數
+    }).format(price);
+}
+
+// 修改載入最新商品的函數
+function loadLatestItems() {
+    fetch("/items/latest15")
+        .then(response => response.json())
+        .then(data => {
+            const productGrid = document.getElementById("latest-products");
+            productGrid.innerHTML = "";
+
+            data.forEach(item => {
+                const minPrice = item.minPrice || 0;
+                const maxPrice = item.maxPrice || 0;
+
+                const priceText = minPrice === maxPrice
+                    ? `${formatPrice(minPrice)}` // 單一價格格式化
+                    : `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`; // 價格範圍格式化
+
+                const productCard = `
+                    <a href="/itemDisplay/${item.itemId}" class="product-item">
+                        <div class="gray-placeholder">
+                            <img src="${item.itemPhoto || 'https://via.placeholder.com/150'}" 
+                                 class="img-fluid rounded" 
+                                 alt="${item.itemName}">
+                        </div>
+                        <div class="product-info">
+                            <h5 class="product-name">${truncateText(item.itemName, 30)}</h5>
+                            <p class="product-price">${priceText}</p>
+                        </div>
+                    </a>
+                `;
+                productGrid.insertAdjacentHTML("beforeend", productCard);
+            });
+        })
+        .catch(error => {
+            console.error("無法載入最新商品：", error);
+        });
+}
+
+        // 每 5 秒更新一次最新商品
+        setInterval(loadLatestItems, 5000);
+        setInterval(loadBrandCards, 5000);
+
+        // 初次載入最新商品
+        document.addEventListener("DOMContentLoaded", loadLatestItems);
+    </script>
+</body>
+</html>

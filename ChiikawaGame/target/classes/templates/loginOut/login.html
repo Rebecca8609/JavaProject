@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/" lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <title>會員登入</title>
+
+  <!-- 導入Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- 導入jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <style>
+    body {
+      background-color: white; /* 恢復白色背景 */
+      color: black;
+    }
+
+    .form-signin {
+      max-width: 330px;
+      padding: 15px;
+      margin: auto;
+      background-color: #dee2e6; /* 設置表單區域為更深的灰色背景 */
+      border-radius: 10px;
+      box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-warning {
+      background-color: #ffc107;
+      color: black;
+      border: none;
+    }
+
+    .modal-header {
+      background-color: #ffc107;
+      color: black;
+    }
+
+    .modal-body {
+      font-size: 16px;
+      color: #856404;
+    }
+
+    .form-signin input {
+      background-color: #ffffff;
+      border: none;
+      color: black;
+    }
+
+    .form-signin input::placeholder {
+      color: #6c757d;
+    }
+
+    .form-signin label {
+      color: #495057;
+    }
+
+    header .custom-icon {
+      width: 40px;
+      height: 40px;
+      background-color: yellow;
+      border-radius: 50%;
+      display: inline-block;
+      text-align: center;
+      line-height: 40px;
+      font-size: 24px;
+      font-weight: bold;
+      color: black;
+    }
+
+    .alert.alert-warning {
+      background-color: transparent;
+      color: #856404;
+      border: none;
+    }
+    
+    .form-floating {
+  	  position: relative; /* 確保按鈕能相對輸入框定位 */
+	}
+	
+
+	.toggle-password-btn {
+  	  position: absolute;
+  	  top: 0;
+  	  right: 0;
+  	  height: 58px; 	/* 按鈕高度與輸入框相同 */
+  	  border-top-left-radius: 0; /* 移除按鈕左上角圓角 */
+  	  border-bottom-left-radius: 0; /* 移除按鈕左下角圓角 */
+	  
+	}
+
+	#floatingPassword {
+  	  padding-right: 100px; 	/* 預留空間給顯示密碼按鈕 */
+	}
+	
+	.feedback-container {
+  	  min-height: 1.5em; /* 預留固定高度的空間 */
+  	  font-size: 0.875em; /* 可調整字體大小 */
+	}
+
+	.invalid-feedback {
+  	  display: none; /* 預設不顯示 */
+  	  color: #d32f2f;   	  
+	}
+	
+	/* 移除圓圈包著驚嘆號的圖示 */
+	.is-invalid {
+    border-color: #dc3545 !important; /* 邊框變為紅色 */
+    background-image: none !important; /* 移除背景圖示 */
+	}
+	
+  </style>
+
+</head>
+
+<body>
+
+  <!-- 引入 userHeader -->
+    <div th:replace="~{layout/userLoginHeader}"></div>
+
+	<br>
+  <main class="form-signin">
+    <form id="loginForm"  th:action="@{/login}" method="post" novalidate>
+      <h1 class="h3 mb-3 fw-normal">會員登入</h1>
+      <div class="form-floating mb-3">
+        <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com" name="userEmail" required>
+        <label for="floatingInput">電子郵件地址(帳號)</label>             	
+      	<div class="feedback-container">
+    	<span class="invalid-feedback">請輸入您的電子郵件。</span>
+  		</div>      	
+      </div>
+      <div class="form-floating mb-3 position-relative">
+        <input type="password" class="form-control" id="floatingPassword" placeholder="Password" name="userPassword" required>
+        <label for="floatingPassword">密碼</label>        
+        <button type="button" id="togglePassword" class="btn btn-outline-secondary position-absolute toggle-password-btn">
+    	<i class="bi bi-eye"></i>
+  		</button>  		
+  		<div class="feedback-container">
+    	<span class="invalid-feedback">請輸入您的密碼。</span>
+  		</div>  				
+      </div>
+      <div>
+      	<label>
+        <input type="checkbox" id="rememberMe"> 記住帳號
+    	</label>
+      </div>
+      <br>
+      
+      <!--VV開發者測試功能VV-->
+      <div>
+      <button type="button" id="devFillButton" class="btn btn-info">開發者專用：自動填入帳密</button>
+      </div>
+      <!--^^正式上線要刪除^^-->
+      
+      <br>
+      <div>
+      <button class="w-100 btn btn-lg btn-warning" type="submit">登入</button>
+      </div>
+      
+      <br>
+      <div>
+      <!-- Google-like pure color button -->
+	  <button type="button" id="googleLoginBtn" class="w-100 btn btn-lg" style="background-color: #4285F4; color: white; border: none; display: flex; justify-content: center; align-items: center;">
+  	  <span style="font-size: 20px; margin-right: 10px;">G</span> 
+  	  使用 Google 登入
+	  </button>
+	  </div>
+	       
+      <hr>
+      <button class="w-100 btn btn-lg btn-warning" type="button" id="registerButton">立即註冊</button>
+      
+      <p class="mt-5 mb-3 text-muted">&copy; 2022 Company, Inc</p>
+    </form>
+   
+    
+	
+  </main>
+
+
+
+   <!-- 錯誤模態框 -->
+  <div class="modal fade" id="loginErrorModal" tabindex="-1" aria-labelledby="loginErrorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loginErrorModalLabel">登入錯誤</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+    <div class="col-md-4 d-flex align-items-center">
+      <a href="/" class="mb-3 me-2 mb-md-0 text-muted text-decoration-none lh-1">
+        <svg class="bi" width="30" height="24">
+          <use xlink:href="#bootstrap"></use>
+        </svg>
+      </a>
+      <span class="text-muted">© 2024 Company, Inc</span>
+    </div>
+    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
+      <li class="ms-3"><a class="text-muted" href="#"><i class="bi bi-twitter" style="font-size: 24px;"></i></a></li>
+      <li class="ms-3"><a class="text-muted" href="#"><i class="bi bi-instagram" style="font-size: 24px;"></i></a></li>
+      <li class="ms-3"><a class="text-muted" href="#"><i class="bi bi-facebook" style="font-size: 24px;"></i></a></li>
+    </ul>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    
+    $(document).ready(function () {
+        
+    // 頁面加載時，從 LocalStorage 中讀取帳號
+    const savedUserEmail = localStorage.getItem('useremail');
+    const rememberMeChecked = localStorage.getItem('rememberMe') === 'true';
+
+    // 如果勾選了記住帳號，並且存在存儲的帳號，則自動填充帳號欄位
+    if (rememberMeChecked) {
+        $('#floatingInput').val(savedUserEmail || '');
+        $('#rememberMe').prop('checked', true);
+    }
+    
+    // 當帳號欄位或記住帳號選項改變時，更新 LocalStorage
+    $('#floatingInput, #rememberMe').on('input change', function () {
+        var userEmail = $('#floatingInput').val().trim();
+        var rememberMe = $('#rememberMe').is(':checked');
+        
+        if (rememberMe) {
+            localStorage.setItem('useremail', userEmail);  // 儲存帳號
+            localStorage.setItem('rememberMe', 'true');    // 記住帳號狀態
+        } else {
+            localStorage.removeItem('useremail');  // 如果未勾選，則移除帳號
+            localStorage.setItem('rememberMe', 'false'); // 更新記住帳號狀態
+        }
+    });
+    
+    // 密碼顯示/隱藏
+  	$('#togglePassword').on('click', function () {
+    	const passwordInput = $('#floatingPassword');
+    	const type = passwordInput.attr('type') === 'password' ? 'text' : 'password';
+    	passwordInput.attr('type', type);
+
+    	// 切換按鈕圖示
+    	const icon = $(this).find('i');
+    	icon.toggleClass('bi-eye bi-eye-slash');
+  	});
+  	
+  	//vvvvvvvvv開發者測試功能vvvvvvvvv
+  	// 測試帳密
+    const devTestAccount = "aizensosukeHADONO90@gmail.com";
+    const devTestPassword = "Ab000000";
+
+    // 點擊按鈕自動填入帳密
+    $('#devFillButton').on('click', function () {
+        $('#floatingInput').val(devTestAccount); // 填入帳號
+        $('#floatingPassword').val(devTestPassword); // 填入密碼
+    });
+    //^^^^^^^^^正式上線要刪除^^^^^^^^^
+           
+      
+    // 表單驗證與提交    
+    $('#loginForm').on('submit', function(e){
+    e.preventDefault();
+    
+    
+    const emailInput = $('#floatingInput');
+  	const passwordInput = $('#floatingPassword');
+  	let isValid = true;
+    
+    // 清除之前的錯誤訊息
+  	$('.invalid-feedback').hide();
+    
+    // 驗證電子郵件
+    if(!emailInput.val().trim()){
+    emailInput.addClass('is-invalid');
+    emailInput.siblings('.feedback-container').find('.invalid-feedback').show();
+    isValid = false;
+    } else {
+    emailInput.removeClass('is-invalid');
+    }
+    
+    // 驗證密碼
+    if (!passwordInput.val().trim()) {
+    passwordInput.addClass('is-invalid');
+    passwordInput.siblings('.feedback-container').find('.invalid-feedback').show();
+    isValid = false;
+  	} else {
+    passwordInput.removeClass('is-invalid');
+  	}
+    
+    if (!isValid) {
+    return;
+  	}
+    
+    // 收集表單數據
+  	const userEmail = emailInput.val().trim();
+  	const userPassword = passwordInput.val().trim();    
+    
+      
+    $.ajax({
+    url: '/login',
+    method: 'POST',
+    
+    contentType: 'application/json',
+    data: JSON.stringify({ userEmail: userEmail, userPassword: userPassword }),
+    success: function(response) {
+        console.log("Login successful:", response);
+        window.location.href = '/memberCenter/profile';  // 登入成功後跳轉到會員中心
+    },
+    error: function(xhr, status, error) {
+        var errorMessage = '登入失敗，請稍後再試'; // 預設錯誤訊息
+		
+		console.log("Raw error response:", xhr.responseText); // 查看原始的錯誤訊息
+				
+        try {
+            // 嘗試解析錯誤的回應，如果是JSON格式
+            var responseJSON = JSON.parse(xhr.responseText);
+            console.log("Parsed error response:", responseJSON); // 顯示解析後的 JSON
+            
+            // 根據 'message' 字段取得錯誤訊息
+            errorMessage = responseJSON.message || errorMessage;
+        } catch (e) {
+            console.error("Failed to parse error response:", e);
+        }
+		
+		// 顯示錯誤訊息
+        console.log("Final error message:", errorMessage);
+
+        // 根據錯誤訊息顯示對應的提示框
+        if (errorMessage === "帳號或密碼錯誤.") {
+            $('#loginErrorModal .modal-body').text('帳號或密碼錯誤');
+            $('#loginErrorModal').modal('show');
+        } else if (errorMessage === "帳號未啟用.") {
+            $('#loginErrorModal .modal-body').text('帳號未啟用');
+            $('#loginErrorModal').modal('show');
+        } else {
+            $('#loginErrorModal .modal-body').text(errorMessage); // 顯示通用錯誤訊息
+            $('#loginErrorModal').modal('show');
+        }
+    }
+});
+    
+    
+    
+
+    
+        
+      });
+		
+		//用button建立立即註冊按鈕，用JS導向。
+      document.getElementById('registerButton').addEventListener('click', function () {
+        window.location.href = '/register';
+      });
+      
+      	//用button建立Google登入按鈕，用JS導向。
+      document.getElementById('googleLoginBtn').addEventListener('click', function () {
+        window.location.href = '/oauth2/authorization/google';
+      });
+	});
+</script>
+</body>
+
+</html>

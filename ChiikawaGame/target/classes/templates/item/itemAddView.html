@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org/">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新增商品</title>
+
+</head>
+<body>
+    <!-- Header -->
+    <div th:replace="~{layout/saHeader}"></div>
+
+    <!-- Main Content -->
+    <main class="container mt-5">
+        <div class="col-12 col-lg-8 mx-auto">
+            <h1 class="text-center mb-4">新增商品</h1>
+            <form method="POST" action="/item/add" enctype="multipart/form-data" class="needs-validation" novalidate>
+                <!-- 商品名稱 -->
+                <div class="mb-3">
+                    <label for="itemName" class="form-label">商品名稱:</label>
+                    <input type="text" id="itemName" name="itemName" class="form-control" required>
+                </div>
+
+                <!-- 商品價格 -->
+                <div class="mb-3">
+                    <label for="itemPrice" class="form-label">商品價格:</label>
+                    <input type="number" id="itemPrice" name="itemPrice" class="form-control" step="0.01" placeholder="由商品選項自動決定" readonly>
+                </div>
+
+                <!-- 商品日期 -->
+                <div class="mb-3">
+                    <label for="itemDate" class="form-label">上架日期:</label>
+                    <input type="date" id="itemDate" name="itemDate" class="form-control">
+                </div>
+
+                <!-- 商品到期日 -->
+                <div class="mb-3">
+                    <label for="itemDue" class="form-label">到期日期:</label>
+                    <input type="date" id="itemDue" name="itemDue" class="form-control">
+                </div>
+
+                <!-- 商品位置 -->
+                <div class="mb-3">
+                    <label for="itemLocation" class="form-label">商品位置:</label>
+                    <input type="text" id="itemLocation" name="itemLocation" class="form-control" required>
+                </div>
+
+                <!-- 商品資訊 -->
+                <div class="mb-3">
+                    <label for="itemInfo" class="form-label">商品資訊:</label>
+                    <textarea id="itemInfo" name="itemInfo" class="form-control" rows="4"></textarea>
+                </div>
+
+                <!-- 商品分類 -->
+                <div class="mb-3">
+                    <label for="category" class="form-label">商品分類:</label>
+                    <select id="category" name="category.categoryId" class="form-select" required>
+                        <option value="">請選擇分類</option>
+                        <option th:each="category : ${categoryList}" th:value="${category.categoryId}" th:text="${category.categoryName}"></option>
+                    </select>
+                </div>
+
+                <!-- 品牌 -->
+                <div class="mb-3">
+                    <label for="brand" class="form-label">品牌:</label>
+                    <select id="brand" name="brand.brandId" class="form-select" required>
+                        <option value="">請選擇品牌</option>
+                        <option th:each="brand : ${brandList}" th:value="${brand.brandId}" th:text="${brand.brandName}"></option>
+                    </select>
+                </div>
+
+                <!-- 運送方式 -->
+                <div class="mb-3">
+                    <label class="form-label">運送方式:</label>
+                    <div th:each="transportation : ${transportationList}" class="form-check">
+                        <input class="form-check-input" type="checkbox" name="transportationMethods" th:value="${transportation.transportationId}">
+                        <label class="form-check-label" th:text="${transportation.name}"></label>
+                    </div>
+                </div>
+
+                <!-- 商品選項 -->
+                <div id="options" class="mb-3">
+                    <label class="form-label">商品選項:</label>
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="itemOption[0].optionName" placeholder="選項名稱" required>
+                        <input type="number" class="form-control" name="itemOption[0].quantity" placeholder="數量" min="0" required>
+                        <input type="number" class="form-control" name="itemOption[0].optionPrice" placeholder="價格" step="0.01">
+
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary mb-3" onclick="addOption()">新增選項</button>
+
+                <!-- 商品圖片 -->
+                <div class="mb-3">
+                    <label for="files" class="form-label">商品圖片:</label>
+                    <input type="file" id="files" name="files" class="form-control" multiple>
+                </div>
+                
+				<!-- 賣家ID -->
+				<div class="mb-3">
+    				<label for="itemUserId" class="form-label">商品賣家ID:</label>
+  					<input type="text" id="itemUserId" name="userInfo.userId" class="form-control" required>
+				</div>
+
+                
+                <!-- 提交按鈕 -->
+                <div class="text-center">
+                    <button type="submit" class="btn btn-success">提交</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+
+
+    <!-- 自定義 JS -->
+    <script>
+        let optionIndex = 1;
+
+        // 新增選項
+        function addOption() {
+            const optionsDiv = document.getElementById("options");
+            const newOption = document.createElement("div");
+            newOption.className = "input-group mb-2";
+            newOption.innerHTML = `
+                <input type="text" class="form-control" name="itemOption[${optionIndex}].optionName" placeholder="選項名稱" required>
+                <input type="number" class="form-control" name="itemOption[${optionIndex}].quantity" placeholder="數量" min="0" required>
+                <input type="number" class="form-control" name="itemOption[${optionIndex}].optionPrice" placeholder="價格" step="0.01">
+                <button type="button" class="btn btn-danger" onclick="removeOption(this)">刪除</button>
+            `;
+            optionsDiv.appendChild(newOption);
+            optionIndex++;
+        }
+
+        // 刪除選項
+        function removeOption(button) {
+            const optionDiv = button.parentElement;
+            optionDiv.remove();
+        }
+    </script>
+</body>
+</html>
